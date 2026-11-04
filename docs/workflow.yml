@@ -1,0 +1,49 @@
+# UC10 workflow — source for the colour-coded diagram (see ResearchReady/workbook/scripts/workflows.py)
+# status: working | partial | broken | planned     flows: wired false = dashed (not automated yet)
+# Statuses from the 2026-10-01 run on the local stack: tests/dry_run.py all steps pass,
+# tests/eval_detection.py 0 leaks of 44 / 0 false positives, a 46-page thesis PDF + DOCX processed.
+title: UC10 Document Anonymizer — workflow
+updated: 2026-10-01
+direction: LR
+summary: >
+  A PDF or DOCX goes into input/; the same file comes out in output/ with names of people (and their
+  email, phone, student number, bank account) and the target company replaced by stable labels
+  (PERSOON_1, ORGANISATIE_1, …), layout intact. Everything else stays readable, including published
+  references. The key that reverses the labels goes to keys/. Everything runs on the local stack;
+  audit tracing, storage and network isolation are not built yet.
+
+lanes:
+  - {id: input, label: "Input"}
+  - {id: anonymise, label: "Anonymise (uc10-anonymizer :5010)"}
+  - {id: output, label: "Output"}
+  - {id: audit, label: "Audit, storage & isolation"}
+
+steps:
+  - {id: upload, kind: start, lane: input, label: "PDF / DOCX in input/ + targets.txt", service: "scripts/anonymize_folder.py", status: working}
+  - {id: parse, lane: input, label: "Read text, headings, tables", service: "Docling (async API, no OCR)", status: working,
+     note: "~6 s per PDF page on CPU; scanned PDFs are refused"}
+  - {id: detect, lane: anonymise, label: "Find people + identifiers (NL + EN)", service: "Presidio + spaCy", status: working,
+     note: "second pass on the file's own text; references and citations stay readable"}
+  - {id: target, lane: anonymise, label: "Mask the target company", service: "input/targets.txt", status: working,
+     note: "everywhere, also in citations, URLs and the file name"}
+  - {id: registry, kind: store, lane: anonymise, label: "Same person → same label", service: "Neo4j (hash + label only)", status: working}
+  - {id: rewrite, lane: output, label: "Rewrite the original file", service: "DOCX XML / PDF redaction", status: working,
+     note: "read back; no file when an original is left"}
+  - {id: out, kind: end, lane: output, label: "output/<name>_anon.pdf", status: working}
+  - {id: keys, kind: store, lane: output, label: "Key (entity map)", service: "keys/", status: working}
+  - {id: isolate, lane: audit, label: "No internet for pipeline containers", service: "InstallLocalAiPackage request", status: planned,
+     note: "verified by code and connection check, not yet enforced"}
+  - {id: trace, lane: audit, label: "Audit trace (hashes only)", service: "Langfuse", status: planned}
+  - {id: bucket, kind: store, lane: audit, label: "Encrypted storage", service: "MinIO doc-anonymizer", status: planned,
+     note: "MinIO is on the server, which is down"}
+
+flows:
+  - {from: upload, to: parse}
+  - {from: parse, to: detect, label: markdown}
+  - {from: detect, to: target}
+  - {from: target, to: registry}
+  - {from: registry, to: rewrite, label: labels}
+  - {from: rewrite, to: out}
+  - {from: rewrite, to: keys}
+  - {from: rewrite, to: trace, wired: false}
+  - {from: out, to: bucket, wired: false}

@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Windesheim Research Document Anonymizer</title>
+  <style>
+    :root {
+      --wh-yellow: #FFC800;
+      --wh-yellow-hover: #EAB308;
+      --wh-navy: #1E293B;
+      --wh-blue: #0284C7;
+      
+      --bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --card-border: #E2E8F0;
+      --text: #0F172A;
+      --text-muted: #64748B;
+      --header-bg: #FFFFFF;
+      --header-border: #E2E8F0;
+
+      --status-green: #10B981;
+      --status-green-bg: #ECFDF5;
+      --status-yellow: #F59E0B;
+      --status-yellow-bg: #FFFBEB;
+      --status-orange: #F97316;
+      --status-orange-bg: #FFF7ED;
+      --status-red: #EF4444;
+      --status-red-bg: #FEF2F2;
+
+      --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+      --console-bg: #0F172A;
+      --console-text: #38BDF8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      padding-bottom: 60px;
+    }
+
+    .brand-topbar {
+      height: 4px;
+      background: linear-gradient(90deg, var(--wh-yellow) 0%, #F59E0B 100%);
+      width: 100%;
+    }
+
+    header {
+      background-color: var(--header-bg);
+      border-bottom: 1px solid var(--header-border);
+      padding: 12px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    }
+    
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .header-titles h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--wh-navy);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-titles .sub {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .system-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.82rem;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .status-icon-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .status-green { background: var(--status-green-bg); color: var(--status-green); border-color: rgba(16, 185, 129, 0.25); }
+    .status-green .status-icon-dot { background: var(--status-green); box-shadow: 0 0 8px var(--status-green); }
+    .status-yellow { background: var(--status-yellow-bg); color: var(--status-yellow); border-color: rgba(245, 158, 11, 0.25); }
+    .status-yellow .status-icon-dot { background: var(--status-yellow); box-shadow: 0 0 8px var(--status-yellow); }
+    .status-orange { background: var(--status-orange-bg); color: var(--status-orange); border-color: rgba(249, 115, 22, 0.25); }
+    .status-orange .status-icon-dot { background: var(--status-orange); box-shadow: 0 0 8px var(--status-orange); animation: pulse 1.5s infinite; }
+    .status-red { background: var(--status-red-bg); color: var(--status-red); border-color: rgba(239, 68, 68, 0.25); }
+    .status-red .status-icon-dot { background: var(--status-red); box-shadow: 0 0 8px var(--status-red); animation: pulse 1s infinite; }
+    .status-loading { background: #F1F5F9; color: #475569; border-color: #CBD5E1; }
+    .status-loading .status-icon-dot { background: #94A3B8; animation: pulse 1.2s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.2); }
+    }
+
+    .tabs-bar {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 22px;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      padding: 10px 18px;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+    }
+    .tab-btn:hover { color: var(--wh-navy); }
+    .tab-btn.active {
+      color: var(--wh-navy);
+      border-bottom-color: var(--wh-yellow);
+    }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    .container { max-width: 1360px; margin: 20px auto; padding: 0 24px; }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; }
+    .col-12 { grid-column: span 12; min-width: 0; }
+    .col-6 { grid-column: span 6; min-width: 0; }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: var(--card-shadow);
+      min-width: 0;
+      overflow: hidden;
+    }
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--wh-navy);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--wh-navy);
+      color: #ffffff;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn:hover { background: #334155; }
+    .btn-wh-yellow { background: var(--wh-yellow); color: var(--wh-navy); font-weight: 700; }
+    .btn-wh-yellow:hover { background: var(--wh-yellow-hover); }
+    .btn-secondary {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+    }
+    .btn-secondary:hover { background: #E2E8F0; }
+    .btn-danger {
+      background: var(--status-red-bg);
+      color: var(--status-red);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+    .btn-danger:hover { background: var(--status-red); color: #fff; }
+    .btn-large { font-size: 1.05rem; padding: 10px 24px; border-radius: 6px; font-weight: 800; }
+
+    .stepper {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin: 10px 0 16px 0;
+    }
+    .stepper::before {
+      content: "";
+      position: absolute;
+      top: 18px;
+      left: 30px;
+      right: 30px;
+      height: 2px;
+      background: var(--card-border);
+      z-index: 1;
+    }
+    .step-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+      flex: 1;
+      text-align: center;
+    }
+    .step-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--card-bg);
+      border: 2px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 6px;
+      transition: all 0.3s;
+      color: var(--text-muted);
+    }
+    .step-item.active .step-circle {
+      border-color: var(--wh-yellow);
+      background: var(--wh-yellow);
+      color: var(--wh-navy);
+      box-shadow: 0 0 10px rgba(255, 200, 0, 0.5);
+    }
+    .step-item.done .step-circle {
+      border-color: var(--status-green);
+      background: var(--status-green-bg);
+      color: var(--status-green);
+    }
+    .step-label { font-size: 0.78rem; font-weight: 600; color: var(--wh-navy); }
+    .step-desc { font-size: 0.7rem; color: var(--text-muted); }
+
+    .dropzone {
+      border: 2px dashed #CBD5E1;
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      background: var(--bg);
+      transition: all 0.2s;
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--wh-yellow);
+      background: rgba(255, 200, 0, 0.05);
+    }
+
+    .table-container {
+      overflow-x: auto;
+      max-width: 100%;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: 1px solid var(--card-border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.83rem;
+    }
+    th {
+      text-align: left;
+      padding: 9px 12px;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--card-border);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--card-border);
+      vertical-align: middle;
+      word-break: break-word;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(241, 245, 249, 0.7); }
+
+    .doc-name {
+      font-weight: 600;
+      font-size: 0.84rem;
+      color: var(--wh-navy);
+      max-width: 250px;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .console-box {
+      background: var(--console-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+      color: var(--console-text);
+      height: 160px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      margin-top: 12px;
+    }
+
+    textarea.code-editor {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.84rem;
+      padding: 8px 10px;
+      resize: vertical;
+    }
+    .tag {
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .tag-entities {
+      background: var(--status-green-bg);
+      color: var(--status-green);
+      border-color: rgba(16, 185, 129, 0.25);
+    }
+    .tag-type {
+      background: #EFF6FF;
+      color: #1D4ED8;
+      border: 1px solid #BFDBFE;
+    }
+
+    /* Stagebedrijf Chip Input UX */
+    .target-card {
+      margin-top: 18px;
+      background: #F8FAFC;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .target-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .target-title-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .target-title {
+      font-weight: 700;
+      font-size: 0.90rem;
+      color: var(--wh-navy);
+    }
+    .target-badge-opt {
+      font-size: 0.70rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: #E2E8F0;
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
+    .target-save-status {
+      font-size: 0.75rem;
+      color: var(--status-green);
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .target-save-status.visible {
+      opacity: 1;
+    }
+    .target-subtext {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0 0 10px 0;
+      line-height: 1.4;
+    }
+    .target-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+      min-height: 28px;
+      align-items: center;
+    }
+    .target-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      border-radius: 16px;
+      padding: 3px 10px 3px 12px;
+      font-size: 0.80rem;
+      font-weight: 600;
+      color: var(--wh-navy);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .target-chip .alias-tag {
+      font-size: 0.70rem;
+      color: var(--text-muted);
+      font-weight: 400;
+      background: #F1F5F9;
+      padding: 1px 5px;
+      border-radius: 8px;
+    }
+    .target-chip-remove {
+      background: none;
+      border: none;
+      color: #94A3B8;
+      cursor: pointer;
+      font-size: 1.05rem;
+      line-height: 1;
+      padding: 0 2px;
+      display: inline-flex;
+      align-items: center;
+      transition: color 0.15s ease;
+    }
+    .target-chip-remove:hover {
+      color: #EF4444;
+    }
+    .target-input-row {
+      display: flex;
+      gap: 8px;
+    }
+    .target-input {
+      flex: 1;
+      background: #FFFFFF;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 7px 12px;
+      font-size: 0.82rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .target-input:focus {
+      border-color: var(--wh-navy);
+      box-shadow: 0 0 0 2px rgba(0, 40, 85, 0.1);
+    }
+
+    .tech-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+    .tech-card {
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .tech-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .tech-name { font-weight: 700; font-size: 0.92rem; color: var(--wh-navy); }
+    .tech-meta { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; }
+
+    .alert-banner {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.85rem;
+    }
+    .alert-warning { background: var(--status-yellow-bg); color: #92400E; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .alert-danger { background: var(--status-red-bg); color: #991B1B; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    /* Modal Dialog for Entity Keys */
+    .modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(2px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-dialog {
+      background: #FFFFFF;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 820px;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.2);
+      border: 1px solid var(--card-border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      animation: modalFadeIn 0.15s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.97); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #FFFFFF;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="brand-topbar"></div>
+
+  <header>
+    <div class="header-left">
+      <img src="/api/logo" alt="Hogeschool Windesheim" style="height: 38px; width: auto; object-fit: contain; display: block;" onerror="this.style.display='none'; document.getElementById('wh-fallback-mark').style.display='block';">
+      <div id="wh-fallback-mark" style="display: none; background: var(--wh-yellow); color: var(--wh-navy); font-weight: 900; font-size: 1.15rem; padding: 4px 10px; border-radius: 6px;">W</div>
+      <div class="header-titles">
+        <h1>Document Anonymizer</h1>
+        <div class="sub">Onderzoek & Anonimisering &bull; 100% Lokaal & Veilig</div>
+      </div>
+    </div>
+    
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <!-- Single System Status Badge -->
+      <div class="system-status-badge status-loading" id="system-status-badge" onclick="switchTab('tech')" title="Status controleren...">
+        <span class="status-icon-dot"></span>
+        <span id="system-status-text">Status controleren...</span>
+      </div>
+
+      <button class="btn btn-secondary" onclick="openFolder('input')">📁 input/</button>
+      <button class="btn btn-secondary" onclick="openFolder('output')">📁 output/</button>
+      <button class="btn btn-secondary" onclick="switchTab('tech'); checkUpdateStatus();" title="Systeem & updates beheer">⬆️ Updates</button>
+      <button class="btn btn-secondary" onclick="openChainForge()" title="Open ChainForge Evaluator op poort 8000">🔬 ChainForge (8000)</button>
+      <button class="btn btn-secondary" onclick="refreshAll()">🔄</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Tabs Navigation -->
+    <div class="tabs-bar">
+      <button class="tab-btn active" id="tab-btn-workspace" onclick="switchTab('workspace')">
+        📋 Research Workspace
+      </button>
+      <button class="tab-btn" id="tab-btn-tech" onclick="switchTab('tech')">
+        🔧 Technical Status
+      </button>
+      <button class="tab-btn" id="tab-btn-logs" onclick="switchTab('logs')">
+        📜 Logs & Diagnostics
+      </button>
+    </div>
+
+    <!-- TAB 1: WORKSPACE -->
+    <div class="tab-pane active" id="pane-workspace">
+      
+      <!-- System Notification Banner if degraded/red -->
+      <div id="workspace-alert" style="display: none;"></div>
+
+      <div class="grid">
+        <!-- Process Stepper -->
+        <div class="card col-12">
+          <div class="card-title">
+            <span>⚡ Anonimiseringsproces</span>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Lokaal spaCy NL+EN & Docling Reconstructie</span>
+          </div>
+          <div class="stepper">
+            <div class="step-item done" id="step-1">
+              <div class="step-circle">1</div>
+              <div class="step-label">Input Document</div>
+              <div class="step-desc">PDF, DOCX, TXT</div>
+            </div>
+            <div class="step-item" id="step-2">
+              <div class="step-circle">2</div>
+              <div class="step-label">Docling Parser</div>
+              <div class="step-desc">Lay-out behoud</div>
+            </div>
+            <div class="step-item" id="step-3">
+              <div class="step-circle">3</div>
+              <div class="step-label">Presidio NER</div>
+              <div class="step-desc">Persoonsgegevens</div>
+            </div>
+            <div class="step-item" id="step-4">
+              <div class="step-circle">4</div>
+              <div class="step-label">Redactie</div>
+              <div class="step-desc">Pseudoniemen</div>
+            </div>
+            <div class="step-item" id="step-5">
+              <div class="step-circle">5</div>
+              <div class="step-label">Verificatie</div>
+              <div class="step-desc">Lekvrij Controle</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 14px; align-items: center; background: var(--bg); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--card-border);">
+            <button class="btn btn-wh-yellow btn-large" id="btn-go" onclick="runPipeline()">▶ SAY GO</button>
+            <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="checkbox" id="chk-force"> Forceer her-anonimisering van reeds voltooide bestanden (--force)
+            </label>
+            <span id="run-status" style="margin-left: auto; font-weight: 600; font-size: 0.85rem; color: var(--text-muted);">Klaar voor verwerking</span>
+          </div>
+
+          <div class="console-box" id="console-log">Wacht op startcommando...</div>
+        </div>
+
+        <!-- Inputs Section -->
+        <div class="card col-6">
+          <div class="card-title">
+            <span>📥 Documenten Input (<span id="input-count">0</span> gereed)</span>
+            <button class="btn btn-secondary" style="font-size: 0.78rem;" onclick="openFolder('input')">Map openen</button>
+          </div>
+
+          <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+            <input type="file" id="file-input" multiple accept=".pdf,.docx,.txt,.md" style="display: none;" onchange="handleFileSelect(event)">
+            <div style="font-size: 1.6rem; margin-bottom: 4px;">📂</div>
+            <div style="font-weight: 700; font-size: 0.9rem; color: var(--wh-navy);">Sleep documenten hierheen of klik om te uploaden</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Ondersteunt .pdf, .docx, .txt, .md (wordt geplaatst in input/)</div>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Bestandsnaam</th>
+                  <th>Grootte</th>
+                  <th>Gewijzigd</th>
+                  <th style="text-align: right;">Actie</th>
+                </tr>
+              </thead>
+              <tbody id="inputs-tbody">
+                <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Geen bestanden in input/</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="target-card">
+            <div class="target-header">
+              <div class="target-title-group">
+                <span class="target-title">🏢 Stage- of Doelbedrijf maskeren</span>
+                <span class="target-badge-opt">Optioneel</span>
+              </div>
+              <div id="target-save-status" class="target-save-status"></div>
+            </div>
+
+            <p class="target-subtext">
+              Namen van personen gaan altijd al automatisch. Vul hier alleen een bedrijfsnaam in als het stagebedrijf specifiek vervangen moet worden door <code>ORGANISATIE_1</code>.
+            </p>
+
+            <div id="target-chips-container" class="target-chips">
+              <span style="font-size: 0.78rem; color: #94A3B8; font-style: italic;">Laden...</span>
+            </div>
+
+            <div class="target-input-row">
+              <input 
+                type="text" 
+                id="target-input-field" 
+                class="target-input" 
+                placeholder="Typ bedrijfsnaam (bijv. Acme of Voorbeeldbedrijf) en druk op Enter..." 
+                onkeydown="if(event.key === 'Enter') { event.preventDefault(); addTargetChip(); }"
+              >
+              <button type="button" class="btn btn-secondary" style="font-size: 0.8rem; padding: 7px 14px;" onclick="addTargetChip()">+ Toevoegen</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Outputs Section -->
+        <div class="card col-6">
+          <div class="card-title">
+            <span>📤 Geanonimiseerde Resultaten (<span id="output-count">0</span> bestanden)</span>
+            <div style="display: flex; gap: 6px;">
+              <select id="sort-select" onchange="renderOutputs()" style="background: var(--bg); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px; padding: 4px 8px; font-size: 0.78rem;">
+                <option value="newest">Sorteer: Nieuwste eerst</option>
+                <option value="name">Sorteer: Naam</option>
+                <option value="size">Sorteer: Grootte</option>
+              </select>
+              <button class="btn btn-secondary" style="font-size: 0.78rem;" onclick="openFolder('output')">Map openen</button>
+            </div>
+          </div>
+
+          <div class="table-container" style="max-height: 520px; overflow-y: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 48%;">Geanonimiseerd Document</th>
+                  <th style="width: 18%;">Entiteiten</th>
+                  <th style="width: 16%;">Datum</th>
+                  <th style="width: 18%; text-align: right;">Sleutel & Doc</th>
+                </tr>
+              </thead>
+              <tbody id="outputs-tbody">
+                <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Geen geanonimiseerde bestanden</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: TECHNICAL STATUS -->
+    <div class="tab-pane" id="pane-tech">
+      <div id="tech-alert" style="display: none; margin-bottom: 16px;"></div>
+
+      <!-- Systeem Update & Beheer Card -->
+      <div class="card col-12" style="margin-bottom: 20px;">
+        <div class="card-title">
+          <span>📦 Systeem & Versiebeheer</span>
+          <span id="version-badge" style="font-size: 0.8rem; background: #E2E8F0; padding: 2px 8px; border-radius: 12px; font-weight: 600;">v1.0.0</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; border: 1px solid var(--card-border); padding: 14px 18px; border-radius: 8px; margin-bottom: 12px;">
+          <div>
+            <div style="font-weight: 700; font-size: 0.95rem; color: var(--wh-navy);" id="update-status-title">UC10 Document Anonymizer</div>
+            <div style="font-size: 0.80rem; color: var(--text-muted); margin-top: 3px;" id="update-status-detail">Git tracking controleren...</div>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-secondary" onclick="checkUpdateStatus()">🔍 Zoek Updates</button>
+            <button class="btn btn-wh-yellow" id="btn-run-update" onclick="runSystemUpdate()">🚀 Nu Bijwerken (One-Click Update)</button>
+          </div>
+        </div>
+        <div id="update-progress-box" style="display: none; background: #0F172A; color: #38BDF8; font-family: monospace; font-size: 0.80rem; padding: 12px; border-radius: 6px; max-height: 180px; overflow-y: auto;">
+          <div id="update-progress-log">Update gestart...</div>
+        </div>
+      </div>
+
+      <div class="card col-12" style="margin-bottom: 20px;">
+        <div class="card-title">
+          <span>Docker Container Services</span>
+          <button class="btn btn-wh-yellow" id="btn-start-containers" onclick="startContainers()">⚡ Start / Herstel Services</button>
+        </div>
+        <div class="tech-grid" id="tech-grid">
+          <div class="tech-card">Laden van container status...</div>
+        </div>
+      </div>
+
+      <div class="card col-12">
+        <div class="card-title">Architectuur & Modellen Details</div>
+        <div style="font-size: 0.85rem; line-height: 1.7; color: var(--wh-navy);">
+          <p><b>• spaCy NLP Modellen:</b> <code>nl_core_news_lg</code> (3.7.0) en <code>en_core_web_lg</code> (3.7.1) ingebouwd in Docker container (poort 5010).</p>
+          <p><b>• Document Parser:</b> Docling CPU container (poort 5001) met pypdfium2 backend.</p>
+          <p><b>• Entiteiten Register:</b> Neo4j 5.x Graph Database (poort 7687 / 7474) voor consistente globale pseudoniemen over meerdere documenten.</p>
+          <p><b>• Evaluatie & Prompt Flows:</b> ChainForge Web UI (poort 8000), direct te verbinden met lokale Ollama modellen (zoals Llama 3, Qwen, DeepSeek op poort 11434).</p>
+          <p><b>• Privacy Garantie:</b> Geen cloud LLM API calls. Geen verbinding met externe servers tijdens de verwerking.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: LOGS & DIAGNOSTICS -->
+    <div class="tab-pane" id="pane-logs">
+      <div class="card col-12">
+        <div class="card-title">
+          <span>Systeem- & Container Logs</span>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" style="font-size: 0.78rem;" onclick="fetchDockerLogs('anonymizer')">Logs Anonymizer</button>
+            <button class="btn btn-secondary" style="font-size: 0.78rem;" onclick="fetchDockerLogs('docling')">Logs Docling</button>
+            <button class="btn btn-secondary" style="font-size: 0.78rem;" onclick="fetchDockerLogs('neo4j')">Logs Neo4j</button>
+            <button class="btn btn-secondary" style="font-size: 0.78rem;" onclick="clearLogs()">Wissen</button>
+          </div>
+        </div>
+        <div class="console-box" id="full-log-viewer" style="height: 480px;">Log viewer gereed...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Interactive Entity Key Modal -->
+  <div id="key-modal" class="modal-backdrop" style="display: none;" onclick="closeKeyModal(event)">
+    <div class="modal-dialog" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2 style="font-size: 1.15rem; font-weight: 800; color: var(--wh-navy);">🔑 Anonimiseringssleutel</h2>
+          <div id="modal-subtitle" style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Document sleutel</div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <a id="btn-export-csv" class="btn btn-secondary" style="font-size: 0.78rem;" href="#" download>📊 Excel (CSV)</a>
+          <a id="btn-export-json" class="btn btn-secondary" style="font-size: 0.78rem;" href="#" download>💾 JSON</a>
+          <button class="btn btn-secondary" style="font-size: 0.85rem; padding: 4px 10px;" onclick="closeKeyModal()">✕</button>
+        </div>
+      </div>
+      <div style="padding: 12px 20px; border-bottom: 1px solid var(--card-border); background: var(--bg); display: flex; gap: 12px; align-items: center;">
+        <input type="text" id="modal-search" placeholder="🔍 Zoek op originele naam of pseudoniem..." oninput="filterKeyTable()" style="flex: 1; padding: 7px 12px; border-radius: 6px; border: 1px solid var(--card-border); font-size: 0.82rem; background: #fff;">
+        <span id="modal-badge-count" class="tag tag-entities">0 entiteiten</span>
+      </div>
+      <div class="modal-body" style="max-height: 440px; overflow-y: auto; padding: 0;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 45%;">Origineel in Document (Vertrouwelijk)</th>
+              <th style="width: 32%;">Vervangen Door (Pseudoniem)</th>
+              <th style="width: 23%;">Soort Gegeven</th>
+            </tr>
+          </thead>
+          <tbody id="modal-key-tbody">
+            <!-- Populated via openKeyModal -->
+          </tbody>
+        </table>
+      </div>
+      <div style="padding: 12px 20px; background: var(--bg); border-top: 1px solid var(--card-border); font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+        <span>🔒 <b>Vertrouwelijk:</b> Deze sleutel bevat de originele persoonsgegevens. Deel deze nooit samen met het geanonimiseerde bestand.</span>
+        <button class="btn btn-secondary" style="font-size: 0.75rem;" onclick="closeKeyModal()">Sluiten</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentInputs = [];
+    let currentOutputs = [];
+    let currentKeyEntries = [];
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      
+      const btn = document.getElementById('tab-btn-' + tabId);
+      const pane = document.getElementById('pane-' + tabId);
+      if (btn) btn.classList.add('active');
+      if (pane) pane.classList.add('active');
+    }
+
+    async function refreshStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        
+        const badge = document.getElementById('system-status-badge');
+        const statusText = document.getElementById('system-status-text');
+        badge.className = 'system-status-badge status-' + data.overall;
+        statusText.innerText = data.overall_label;
+        badge.title = data.overall_desc;
+
+        const alertBox = document.getElementById('workspace-alert');
+        if (data.overall === 'red') {
+          alertBox.style.display = 'block';
+          alertBox.className = 'alert-banner alert-danger';
+          alertBox.innerHTML = `⚠️ <b>Kritieke Fout:</b> ${data.overall_desc} <button class="btn btn-secondary" style="margin-left: auto; font-size: 0.75rem;" onclick="startContainers()">Herstel Services</button>`;
+        } else if (data.overall === 'yellow') {
+          alertBox.style.display = 'block';
+          alertBox.className = 'alert-banner alert-warning';
+          alertBox.innerHTML = `⚠️ <b>Aandachtspunt:</b> ${data.overall_desc} <button class="btn btn-secondary" style="margin-left: auto; font-size: 0.75rem;" onclick="startContainers()">Probeer Herstel</button>`;
+        } else {
+          alertBox.style.display = 'none';
+        }
+
+        const grid = document.getElementById('tech-grid');
+        grid.innerHTML = '';
+        for (const [key, svc] of Object.entries(data.services)) {
+          const isHealthy = svc.status === 'healthy';
+          const dotClass = isHealthy ? 'status-green' : (svc.status === 'degraded' ? 'status-yellow' : 'status-red');
+          const card = document.createElement('div');
+          card.className = 'tech-card';
+          card.innerHTML = `
+            <div class="tech-header">
+              <span class="tech-name">${svc.name}</span>
+              <span class="system-status-badge ${dotClass}" style="padding: 3px 8px; font-size: 0.72rem;">${svc.status.toUpperCase()}</span>
+            </div>
+            <div class="tech-meta">Poort: <b>${svc.port}</b> | Container: <code>${svc.container}</code></div>
+            <div class="tech-meta">Docker: ${svc.docker_status || 'Niet actief / Gestopt'}</div>
+            <div style="font-size: 0.75rem; color: var(--wh-navy); margin-top: 6px; font-weight: 600;">${svc.detail}</div>
+            ${key === 'chainforge' ? `
+            <div style="margin-top: 10px;">
+              <button class="btn btn-wh-yellow" style="width: 100%; font-size: 0.74rem; padding: 4px 8px;" onclick="openChainForge()">
+                ${isHealthy ? '↗ Open ChainForge UI' : '⚡ Start ChainForge'}
+              </button>
+            </div>` : ''}
+          `;
+          grid.appendChild(card);
+        }
+      } catch (err) {
+        console.error("Status check mislukt:", err);
+        const badge = document.getElementById('system-status-badge');
+        const statusText = document.getElementById('system-status-text');
+        if (badge && statusText) {
+          badge.className = 'system-status-badge status-red';
+          statusText.innerText = 'Verbindingsfout (Offline)';
+          badge.title = 'Kon status niet ophalen: ' + err;
+        }
+        const alertBox = document.getElementById('workspace-alert');
+        if (alertBox) {
+          alertBox.style.display = 'block';
+          alertBox.className = 'alert-banner alert-danger';
+          alertBox.innerHTML = `⚠️ <b>Verbindingsfout:</b> Kon backend status niet ophalen. Is het dashboard actief? <button class="btn btn-secondary" style="margin-left: auto; font-size: 0.75rem;" onclick="refreshAll()">Opnieuw proberen</button>`;
+        }
+      }
+    }
+
+    let currentTargets = [];
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function parseTargetsFromText(rawText) {
+      if (!rawText) return [];
+      return rawText.split('\n')
+        .map(l => l.trim())
+        .filter(l => l && !l.startsWith('#'));
+    }
+
+    function renderTargetChips() {
+      const container = document.getElementById('target-chips-container');
+      if (!container) return;
+      if (!currentTargets.length) {
+        container.innerHTML = '<span style="font-size: 0.78rem; color: #94A3B8; font-style: italic;">Geen stagebedrijf ingesteld (alleen persoonsgegevens worden gemaskeerd).</span>';
+        return;
+      }
+      container.innerHTML = currentTargets.map((t, idx) => {
+        const parts = t.split('|').map(p => p.trim()).filter(Boolean);
+        const main = parts[0] || t;
+        const aliases = parts.slice(1);
+        const aliasHtml = aliases.length ? `<span class="alias-tag">+${aliases.map(escapeHtml).join(', ')}</span>` : '';
+        return `
+          <div class="target-chip">
+            <span>🏢 ${escapeHtml(main)}</span>
+            ${aliasHtml}
+            <button type="button" class="target-chip-remove" onclick="removeTargetChip(${idx})" title="Verwijder">&times;</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function addTargetChip() {
+      const input = document.getElementById('target-input-field');
+      if (!input) return;
+      const val = input.value.trim();
+      if (!val) return;
+      if (!currentTargets.includes(val)) {
+        currentTargets.push(val);
+        renderTargetChips();
+        await saveTargetsAuto();
+      }
+      input.value = '';
+    }
+
+    async function removeTargetChip(index) {
+      currentTargets.splice(index, 1);
+      renderTargetChips();
+      await saveTargetsAuto();
+    }
+
+    async function saveTargetsAuto() {
+      const statusEl = document.getElementById('target-save-status');
+      const form = new FormData();
+      form.append('targets', currentTargets.join('\n'));
+      try {
+        await fetch('/api/targets', { method: 'POST', body: form });
+        if (statusEl) {
+          statusEl.innerText = "✓ Opgeslagen";
+          statusEl.classList.add('visible');
+          setTimeout(() => statusEl.classList.remove('visible'), 2000);
+        }
+      } catch (err) {
+        console.error("Auto-save target mislukt:", err);
+      }
+    }
+
+    async function loadInputs() {
+      try {
+        const res = await fetch('/api/inputs');
+        const data = await res.json();
+        currentInputs = data.files;
+        document.getElementById('input-count').innerText = currentInputs.length;
+        currentTargets = parseTargetsFromText(data.targets);
+        renderTargetChips();
+        renderInputs();
+      } catch (err) {
+        console.error("Input load mislukt:", err);
+      }
+    }
+
+    function renderInputs() {
+      const tbody = document.getElementById('inputs-tbody');
+      if (!currentInputs.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Geen documenten in input/</td></tr>';
+        return;
+      }
+      tbody.innerHTML = currentInputs.map(f => {
+        const warnBadge = f.warning ? `<span class="tag" style="background: var(--status-yellow-bg); color: #B45309; border-color: #FCD34D;">${f.warning}</span>` : '';
+        return `
+          <tr>
+            <td>
+              <div class="doc-name">${f.name}</div>
+              ${warnBadge}
+            </td>
+            <td><span class="tag">${f.size_human}</span></td>
+            <td style="font-size: 0.78rem; color: var(--text-muted); white-space: nowrap;">${f.modified}</td>
+            <td style="text-align: right;">
+              <button class="btn btn-danger" style="font-size: 0.72rem; padding: 3px 8px;" onclick="deleteInput('${f.name}')">Verwijder</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function loadOutputs() {
+      try {
+        const res = await fetch('/api/outputs');
+        const data = await res.json();
+        currentOutputs = data.files;
+        document.getElementById('output-count').innerText = currentOutputs.length;
+        renderOutputs();
+      } catch (err) {
+        console.error("Outputs load mislukt:", err);
+      }
+    }
+
+    function renderOutputs() {
+      const sort = document.getElementById('sort-select').value;
+      const sorted = [...currentOutputs];
+      if (sort === 'newest') sorted.sort((a, b) => b.mtime - a.mtime);
+      if (sort === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name));
+      if (sort === 'size') sorted.sort((a, b) => b.size - a.size);
+
+      const tbody = document.getElementById('outputs-tbody');
+      if (!sorted.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Geen geanonimiseerde bestanden</td></tr>';
+        return;
+      }
+      tbody.innerHTML = sorted.map(f => {
+        const downloadDoc = `<a class="btn btn-secondary" style="font-size: 0.72rem; padding: 3px 7px;" href="/api/download/output/${encodeURIComponent(f.name)}" download title="Download geanonimiseerd document">📥 Doc</a>`;
+        const viewKeyBtn = f.key_file ? `<button class="btn btn-secondary" style="font-size: 0.72rem; padding: 3px 7px;" onclick="openKeyModal('${encodeURIComponent(f.key_file)}', '${f.name.replace(/'/g, "\\\\'")}')" title="Bekijk leesbare anonimiseringssleutel">🔑 Sleutel</button>` : '';
+        const entityBadge = f.entity_count !== null ? `<span class="tag tag-entities">${f.entity_count} entiteiten</span>` : '<span style="color: var(--text-muted);">—</span>';
+
+        return `
+          <tr>
+            <td>
+              <div class="doc-name">${f.name}</div>
+              <div style="font-size: 0.74rem; color: var(--text-muted);">${f.size_human}</div>
+            </td>
+            <td>${entityBadge}</td>
+            <td style="font-size: 0.78rem; color: var(--text-muted); white-space: nowrap;">${f.modified}</td>
+            <td style="text-align: right; white-space: nowrap;">
+              ${viewKeyBtn}
+              ${downloadDoc}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Key Modal Functions
+    async function openKeyModal(keyFile, docName) {
+      const modal = document.getElementById('key-modal');
+      const subtitle = document.getElementById('modal-subtitle');
+      const csvBtn = document.getElementById('btn-export-csv');
+      const jsonBtn = document.getElementById('btn-export-json');
+      const tbody = document.getElementById('modal-key-tbody');
+
+      subtitle.innerText = "Voor document: " + docName;
+      csvBtn.href = `/api/download/key-csv/${keyFile}`;
+      jsonBtn.href = `/api/download/key/${keyFile}`;
+      document.getElementById('modal-search').value = '';
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 24px; color: var(--text-muted);">Sleutel laden...</td></tr>';
+      modal.style.display = 'flex';
+
+      try {
+        const res = await fetch(`/api/key-data/${keyFile}`);
+        const data = await res.json();
+        currentKeyEntries = data.entries;
+        document.getElementById('modal-badge-count').innerText = `${data.total} entiteiten`;
+        renderKeyTable(currentKeyEntries);
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--status-red);">Fout bij laden sleutel: ${err}</td></tr>`;
+      }
+    }
+
+    function renderKeyTable(entries) {
+      const tbody = document.getElementById('modal-key-tbody');
+      if (!entries.length) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; color: var(--text-muted);">Geen overeenkomende entiteiten gevonden</td></tr>';
+        return;
+      }
+      tbody.innerHTML = entries.map(e => `
+        <tr>
+          <td><b style="color: var(--wh-navy);">${e.original}</b></td>
+          <td><span class="tag" style="background: var(--wh-yellow); color: var(--wh-navy); font-weight: 700;">${e.label}</span></td>
+          <td><span class="tag tag-type">${e.type}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function filterKeyTable() {
+      const q = document.getElementById('modal-search').value.toLowerCase().trim();
+      if (!q) {
+        renderKeyTable(currentKeyEntries);
+        return;
+      }
+      const filtered = currentKeyEntries.filter(e => 
+        e.original.toLowerCase().includes(q) || 
+        e.label.toLowerCase().includes(q) || 
+        e.type.toLowerCase().includes(q)
+      );
+      renderKeyTable(filtered);
+    }
+
+    function closeKeyModal(e) {
+      if (!e || e.target.id === 'key-modal' || !e.target.closest('.modal-dialog')) {
+        document.getElementById('key-modal').style.display = 'none';
+      }
+    }
+
+    async function handleFileSelect(evt) {
+      const files = evt.target.files;
+      if (!files.length) return;
+      await uploadFiles(files);
+    }
+
+    async function uploadFiles(files) {
+      const formData = new FormData();
+      for (const f of files) formData.append('files', f);
+      try {
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.errors && data.errors.length) {
+          alert("Waarschuwing bij upload:\\n" + data.errors.join("\\n"));
+        }
+        await loadInputs();
+      } catch (err) {
+        alert("Upload fout: " + err);
+      }
+    }
+
+    const dropzone = document.getElementById('dropzone');
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => { dropzone.classList.remove('dragover'); });
+    dropzone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        await uploadFiles(e.dataTransfer.files);
+      }
+    });
+
+
+
+    async function deleteInput(name) {
+      if (!confirm(`Verwijder ${name} uit input/?`)) return;
+      const form = new FormData();
+      form.append('filename', name);
+      await fetch('/api/inputs/delete', { method: 'POST', body: form });
+      await loadInputs();
+    }
+
+    async function openFolder(folder) {
+      const form = new FormData();
+      form.append('folder', folder);
+      await fetch('/api/open-folder', { method: 'POST', body: form });
+    }
+
+    async function openChainForge() {
+      try {
+        const res = await fetch('/api/chainforge/start', { method: 'POST' });
+        const data = await res.json();
+        window.open(data.url || 'http://localhost:8000', '_blank');
+        setTimeout(refreshStatus, 1500);
+      } catch (err) {
+        alert("Fout bij starten of openen ChainForge: " + err);
+      }
+    }
+
+    async function startContainers() {
+      const btn = document.getElementById('btn-start-containers');
+      const alertEl = document.getElementById('tech-alert');
+      const oldText = btn ? btn.innerText : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = "⏳ Bezig met herstellen...";
+      }
+      if (alertEl) {
+        alertEl.style.display = 'block';
+        alertEl.className = 'alert-banner alert-warning';
+        alertEl.innerHTML = 'Services worden gecontroleerd en gestart via Docker Compose...';
+      }
+      try {
+        const res = await fetch('/api/containers/start', { method: 'POST' });
+        const data = await res.json();
+        await refreshStatus();
+        if (alertEl) {
+          if (data.success) {
+            alertEl.className = 'alert-banner';
+            alertEl.style.background = 'var(--status-green-bg)';
+            alertEl.style.color = 'var(--status-green)';
+            alertEl.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+            alertEl.innerHTML = '✓ Services succesvol gecontroleerd en gestart.';
+            setTimeout(() => { alertEl.style.display = 'none'; }, 4000);
+          } else {
+            alertEl.className = 'alert-banner alert-danger';
+            alertEl.innerHTML = `⚠️ Fout bij starten van containers: ${data.stderr || data.stdout || 'Onbekende fout'}`;
+          }
+        }
+      } catch (err) {
+        if (alertEl) {
+          alertEl.className = 'alert-banner alert-danger';
+          alertEl.innerHTML = `⚠️ Verbindingsfout: ${err}`;
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = oldText || "⚡ Start / Herstel Services";
+        }
+      }
+    }
+
+    function runPipeline() {
+      if (currentInputs.length === 0) {
+        alert("Er staan geen documenten in input/! Plaats eerst een PDF of DOCX in het invoervak.");
+        return;
+      }
+
+      const force = document.getElementById('chk-force').checked;
+      const consoleBox = document.getElementById('console-log');
+      const fullLogBox = document.getElementById('full-log-viewer');
+      const statusEl = document.getElementById('run-status');
+      const btn = document.getElementById('btn-go');
+
+      const startMsg = `[${new Date().toLocaleTimeString()}] Anonimisering gestart...\\n`;
+      consoleBox.innerText = startMsg;
+      fullLogBox.innerText += startMsg;
+      btn.disabled = true;
+      btn.innerText = "⏳ BEZIG...";
+      statusEl.innerText = "Documenten anonimiseren via lokale modellen...";
+
+      const badge = document.getElementById('system-status-badge');
+      const statusText = document.getElementById('system-status-text');
+      badge.className = 'system-status-badge status-orange';
+      statusText.innerText = 'Documenten Verwerken...';
+
+      const steps = [document.getElementById('step-2'), document.getElementById('step-3'), document.getElementById('step-4'), document.getElementById('step-5')];
+      steps.forEach(s => s.classList.add('active'));
+
+      const evtSource = new EventSource(`/api/run-stream?force=${force}`);
+      evtSource.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        if (data.type === 'log') {
+          consoleBox.innerText += data.text + "\\n";
+          consoleBox.scrollTop = consoleBox.scrollHeight;
+          fullLogBox.innerText += data.text + "\\n";
+          fullLogBox.scrollTop = fullLogBox.scrollHeight;
+        } else if (data.type === 'finish') {
+          evtSource.close();
+          btn.disabled = false;
+          btn.innerText = "▶ SAY GO";
+          steps.forEach(s => { s.classList.remove('active'); s.classList.add('done'); });
+          if (data.success) {
+            statusEl.innerText = "Succesvol afgerond!";
+          } else {
+            statusEl.innerText = "Afgerond met fouten (zie logs)";
+            alert("Er traden fouten op tijdens de anonimisering:\\n" + (data.failures ? data.failures.join("\\n") : "Controleer logs"));
+          }
+          refreshAll();
+        }
+      };
+      evtSource.onerror = function() {
+        evtSource.close();
+        btn.disabled = false;
+        btn.innerText = "▶ SAY GO";
+        steps.forEach(s => s.classList.remove('active'));
+        statusEl.innerText = "Stream afgesloten.";
+        refreshAll();
+      };
+    }
+
+    async function fetchDockerLogs(service) {
+      const viewer = document.getElementById('full-log-viewer');
+      viewer.innerText = `[${new Date().toLocaleTimeString()}] Ophalen logs voor ${service}...\\n`;
+      try {
+        const res = await fetch(`/api/docker-logs/${service}`);
+        const data = await res.json();
+        viewer.innerText = `=== DOCKER LOGS: ${data.service} ===\\n` + data.logs;
+        viewer.scrollTop = viewer.scrollHeight;
+      } catch (err) {
+        viewer.innerText += "Fout bij ophalen logs: " + err;
+      }
+    }
+
+    function clearLogs() {
+      document.getElementById('full-log-viewer').innerText = "Logs gewist.\\n";
+      document.getElementById('console-log').innerText = "Wacht op startcommando...\\n";
+    }
+
+    async function checkUpdateStatus() {
+      try {
+        const res = await fetch('/api/update/status');
+        const data = await res.json();
+        document.getElementById('version-badge').innerText = 'v' + data.version;
+        document.getElementById('update-status-title').innerText = `UC10 Anonymizer (Branch: ${data.branch} @ ${data.commit}${data.dirty ? ' *gewijzigd*' : ''})`;
+        document.getElementById('update-status-detail').innerText = data.status_message;
+      } catch (err) {
+        document.getElementById('update-status-detail').innerText = 'Kan update status niet controleren: ' + err;
+      }
+    }
+
+    async function runSystemUpdate() {
+      const btn = document.getElementById('btn-run-update');
+      const box = document.getElementById('update-progress-box');
+      const log = document.getElementById('update-progress-log');
+
+      btn.disabled = true;
+      btn.innerText = '⏳ Bezig met bijwerken...';
+      box.style.display = 'block';
+      log.innerText = 'Initialiseren van update procedure...\n';
+
+      try {
+        const res = await fetch('/api/update/run', { method: 'POST' });
+        const data = await res.json();
+        
+        log.innerText += data.logs.join('\n') + '\n';
+        if (data.success) {
+          log.innerText += '\n✅ Systeem succesvol bijgewerkt!';
+          await checkUpdateStatus();
+          await refreshStatus();
+        } else {
+          log.innerText += '\n⚠️ Update deels voltooid of melding ontvangen.';
+        }
+      } catch (err) {
+        log.innerText += '\n❌ Fout bij uitvoeren update: ' + err;
+      } finally {
+        btn.disabled = false;
+        btn.innerText = '🚀 Nu Bijwerken (One-Click Update)';
+      }
+    }
+
+    async function refreshAll() {
+      await refreshStatus();
+      await loadInputs();
+      await loadOutputs();
+      await checkUpdateStatus();
+    }
+
+    refreshAll();
+    setInterval(refreshStatus, 8000);
+  </script>
+</body>
+</html>

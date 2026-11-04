@@ -1,0 +1,36 @@
+# UC10 requirements — what it takes to accomplish this use case.
+# services: names from the ResearchReady service catalog (live status is probed by workbook/scripts/requirements.py)
+# everything else: status available | partial | missing | broken | open (decisions); epics = which epics need it
+services:
+  - {service: presidio, for: "anonymisation service (uc10-anonymizer, localstack :5010; CT140 when the server is back)", epics: [1]}
+  - {service: neo4j, for: "global label registry", epics: [2]}
+  - {service: docling, for: "layout-aware parsing", epics: [3]}
+  - {service: langfuse, for: "audit trace (hashes only)", epics: [4]}
+  - {service: minio, for: "encrypted storage", epics: [4]}
+  - {service: gitea, for: "versioned output", epics: [4]}
+  - {service: openwebui, for: "researcher entry point (tool)", epics: [5]}
+  - {service: n8n, for: "researcher entry point (webhook)", epics: [5]}
+tools:
+  - {name: "Presidio FastAPI service (service/app.py)", status: available, epics: [1]}
+  - {name: "spaCy nl_core_news_lg + en_core_web_lg", status: available, epics: [1]}
+  - {name: "Identifiers of people: IBAN, student/employee number", status: available, epics: [2]}
+  - {name: "BSN recogniser (11-proof)", status: missing, epics: [2]}
+  - {name: "Same-format output: DOCX XML rewrite, PDF redaction (PyMuPDF), read-back check", status: available, epics: [3]}
+  - {name: "Evaluation script (tests/eval_detection.py: leaks and false positives)", status: available, epics: [2]}
+  - {name: "Folder workflow (scripts/anonymize_folder.py: input/ → output/ + keys/)", status: available, epics: [5]}
+  - {name: "Dutch one-pager for users on local processing", status: available, epics: [5]}
+  - {name: "Network isolation of the pipeline containers (requested)", status: missing, epics: [4]}
+access:
+  - {name: "Neo4j password", status: available, epics: [2]}
+  - {name: "MinIO bucket doc-anonymizer with SSE", status: missing, epics: [4]}
+  - {name: "Langfuse project keys for UC10", status: missing, epics: [4]}
+data:
+  - {name: "Sample text (tests/sample.txt)", status: available, epics: [1]}
+  - {name: "NL + EN evaluation set (11 texts; target 20 documents)", status: partial, epics: [2]}
+  - {name: "Sample PDF / DOCX with tables and headings (tests/interview.*, a real thesis)", status: available, epics: [3]}
+decisions:
+  - {name: "Scope: people and the target company only (decided 2026-10-01)", status: available, epics: [2]}
+  - {name: "Published references stay readable (decided 2026-09-30)", status: available, epics: [2]}
+  - {name: "Accuracy targets", status: open, epics: [2]}
+  - {name: "Researcher entry point beyond the folder: upload page / OpenWebUI tool / n8n", status: open, epics: [5]}
+  - {name: "Entity-map retention", status: open, epics: [4]}

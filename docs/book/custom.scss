@@ -1,0 +1,101 @@
+/*-- scss:defaults --*/
+
+$primary:   #2c3e50;
+$link-color: #2980b9;
+$font-family-sans-serif: "Inter", "Segoe UI", system-ui, sans-serif;
+$font-size-root: 15px;
+$line-height-base: 1.7;
+
+/*-- scss:rules --*/
+
+/* ── Status badges ───────────────────────────────────────────────────────── */
+
+.status-green  { color: #fff; background: #27ae60; padding: 2px 8px; border-radius: 4px; font-size: 0.82em; font-weight: 600; white-space: nowrap; }
+.status-yellow { color: #fff; background: #e67e22; padding: 2px 8px; border-radius: 4px; font-size: 0.82em; font-weight: 600; white-space: nowrap; }
+.status-red    { color: #fff; background: #e74c3c; padding: 2px 8px; border-radius: 4px; font-size: 0.82em; font-weight: 600; white-space: nowrap; }
+
+/* ── Cover page / hero ───────────────────────────────────────────────────── */
+
+#quarto-document-content > h1:first-of-type {
+  font-size: 2.6rem;
+  font-weight: 800;
+  border-bottom: 4px solid #2980b9;
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.2rem;
+}
+
+/* ── Chapter headers ─────────────────────────────────────────────────────── */
+
+h1.title { font-size: 2rem; font-weight: 800; }
+
+h2 {
+  font-weight: 700;
+  border-bottom: 2px solid #ecf0f1;
+  padding-bottom: 0.25rem;
+  margin-top: 2.5rem;
+}
+
+h3 { font-weight: 600; color: #2c3e50; margin-top: 1.8rem; }
+
+/* ── Tables ──────────────────────────────────────────────────────────────── */
+
+table {
+  font-size: 0.88em;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead th {
+  background: #2c3e50;
+  color: #fff;
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+}
+
+tbody tr:nth-child(even) { background: #f8f9fa; }
+tbody td { padding: 7px 12px; border-bottom: 1px solid #dee2e6; vertical-align: top; }
+
+/* ── Code blocks ─────────────────────────────────────────────────────────── */
+
+pre { font-size: 0.84em; border-radius: 6px; }
+code { font-size: 0.88em; }
+
+/* ── Callouts ────────────────────────────────────────────────────────────── */
+
+.callout { border-radius: 6px; margin: 1.5rem 0; }
+
+/* ── Legend bar ──────────────────────────────────────────────────────────── */
+
+.legend-bar {
+  display: flex;
+  gap: 1.5rem;
+  margin: 1rem 0 1.5rem 0;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9em;
+}
+
+.legend-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+
+#quarto-sidebar { font-size: 0.87em; }
+
+/* ── Print / PDF ─────────────────────────────────────────────────────────── */
+
+@media print {
+  .quarto-sidebar, #TOC, .nav-page { display: none !important; }
+  pre { page-break-inside: avoid; }
+  h2, h3 { page-break-after: avoid; }
+}

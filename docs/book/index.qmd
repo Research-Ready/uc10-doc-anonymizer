@@ -1,0 +1,73 @@
+---
+title: "UC10 Document Anonymizer"
+subtitle: "PDF / DOCX in → the same file out, people and target company masked, fully local"
+---
+
+Research with interviews, case files or theses runs into the same problem every time: the material names
+people and the organisation the research was for, and it cannot be shared until those are removed. Doing
+that by hand is slow and error-prone, and cloud anonymisation services mean sending the raw documents out
+of the organisation first.
+
+UC10 does it locally. A PDF or Word file goes in; the same file comes out with the names of people (and
+their email, phone, student number and bank account) and the target company replaced by stable labels.
+Layout, tables and fonts stay as they were. Everything else stays readable: other organisations, software,
+places, dates, and the literature the document cites.
+
+::: {.callout-important}
+## Where UC10 stands (2026-10-01)
+Working on the local stack: researchers drop files in `input/`, name the target company in
+`input/targets.txt`, and get `output/<name>_anon.pdf` back, with the key in `keys/`. A 46-page thesis has
+been processed as PDF and DOCX. The dry-run passes and the evaluation set shows 0 leaks of 44 and 0 false
+positives. Not built yet: the audit trace, encrypted storage, and blocking internet access for the pipeline
+containers. See [Workflow](workflow.qmd) and [Plan](plan.qmd).
+:::
+
+## What gets masked
+
+| What | Example | Label |
+|---|---|---|
+| Person | Jan de Vries, later "De Vries" | PERSOON_1 |
+| Target company | Acme Trailers, acmetrailers.nl | ORGANISATIE_1 |
+| Student / employee number | S1234567 | ID_1 |
+| Email address | jan@example.nl | EMAIL_1 |
+| Phone number | 06-12345678 | TELEFOON_1 |
+| Bank account | NL91ABNA0417164300 | IBAN_1 |
+
+Not masked: other organisations, software (ERP, PLM), places, dates, job titles, and published references
+("(Yin, 2018)" and the reference list). The target company is masked there too.
+
+Labels are **global and stable**: the same person gets the same label in every document. Neo4j keeps a
+SHA-256 hash of each value with its label; the value itself is never stored.
+
+## Privacy design
+
+- Everything runs on the local machine in Docker: Docling, the anonymizer and Neo4j. During a 46-page run
+  every connection stayed inside the local Docker network; host ports listen on 127.0.0.1 only.
+- Not yet enforced by the network: the containers could reach the internet. Blocking that is requested.
+- The written file is read back; if any original is still in it, no file is produced.
+- The key (`keys/`) reverses the anonymization, so it is personal data: it is kept apart from `output/` and out of git.
+- The repo folder is synced by Nextcloud, so originals and keys also reach the Nextcloud server.
+- A Dutch one-pager for users: `output/Onepager - lokaal anonimiseren.pdf`.
+
+## Stack (local, 2026-10-01)
+
+| Component | Service | Address |
+|---|---|---|
+| Document parsing | Docling (docling-serve v1.35, async API, no OCR) | localhost:5001 |
+| Detection + rewriting | `uc10-anonymizer`: Presidio + spaCy `nl_core_news_lg`, `en_core_web_lg`; PyMuPDF | localhost:5010 |
+| Label registry | Neo4j | bolt://localhost:7687 |
+| Audit trail (planned) | Langfuse | localhost:3100 |
+| Encrypted storage (planned) | MinIO bucket `doc-anonymizer` | server, currently down |
+
+## Try it
+
+```bash
+# Anonymize everything in input/ (target company in input/targets.txt)
+python3 scripts/anonymize_folder.py
+
+# Checks
+python3 tests/dry_run.py            # service, Docling, DOCX + PDF same-format output
+python3 tests/eval_detection.py     # leaks and false positives on the evaluation texts
+```
+
+The service code is in `service/app.py`; the container is built by the localstack in InstallLocalAiPackage.

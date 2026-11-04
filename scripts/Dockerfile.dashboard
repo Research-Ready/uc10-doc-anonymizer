@@ -1,0 +1,23 @@
+# UC10 Document Anonymizer — Web Control Dashboard Dockerfile
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir \
+    fastapi \
+    uvicorn \
+    httpx \
+    python-multipart
+
+COPY scripts/ /app/scripts/
+COPY VERSION /app/VERSION
+COPY docker-compose.yml /app/docker-compose.yml
+
+EXPOSE 5050
+
+CMD ["python3", "scripts/web_dashboard.py"]

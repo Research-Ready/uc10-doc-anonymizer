@@ -1,0 +1,24 @@
+# Documents and results: personal data, never commit
+input/*
+!input/README.md
+output/*
+!output/README.md
+keys/*
+!keys/README.md
+test-results/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Password databases: never commit
+*.kdbx
+
+# Local agent memory, logs, private notes: never commit
+.swarm/
+.claude-flow/
+ruvector.db
+agentdb.rvf*
+*.log
+CLAUDE.md
+scripts/provision_ct140.sh

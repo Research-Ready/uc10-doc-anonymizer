@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Anonymizer Web Dashboard
+Comment=Open local web control interface for Document Anonymizer
+Exec=/home/chris/Nextcloud/Github/uc10-doc-anonymizer/dashboard.sh
+Icon=applications-internet
+Path=/home/chris/Nextcloud/Github/uc10-doc-anonymizer
+Terminal=false
+Categories=Utility;Office;

@@ -1,0 +1,369 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "UC10 Document Anonymizer",
+    "section": "",
+    "text": "0.1 What gets masked\nResearch with interviews, case files or theses runs into the same problem every time: the material names people and the organisation the research was for, and it cannot be shared until those are removed. Doing that by hand is slow and error-prone, and cloud anonymisation services mean sending the raw documents out of the organisation first.\nUC10 does it locally. A PDF or Word file goes in; the same file comes out with the names of people (and their email, phone, student number and bank account) and the target company replaced by stable labels. Layout, tables and fonts stay as they were. Everything else stays readable: other organisations, software, places, dates, and the literature the document cites.\nNot masked: other organisations, software (ERP, PLM), places, dates, job titles, and published references (“(Yin, 2018)” and the reference list). The target company is masked there too.\nLabels are global and stable: the same person gets the same label in every document. Neo4j keeps a SHA-256 hash of each value with its label; the value itself is never stored.",
+    "crumbs": [
+      "<span class='chapter-number'>1</span>  <span class='chapter-title'>UC10 Document Anonymizer</span>"
+    ]
+  },
+  {
+    "objectID": "index.html#what-gets-masked",
+    "href": "index.html#what-gets-masked",
+    "title": "UC10 Document Anonymizer",
+    "section": "",
+    "text": "What\nExample\nLabel\n\n\n\n\nPerson\nJan de Vries, later “De Vries”\nPERSOON_1\n\n\nTarget company\nAcme Trailers, acmetrailers.nl\nORGANISATIE_1\n\n\nStudent / employee number\nS1234567\nID_1\n\n\nEmail address\njan@example.nl\nEMAIL_1\n\n\nPhone number\n06-12345678\nTELEFOON_1\n\n\nBank account\nNL91ABNA0417164300\nIBAN_1",
+    "crumbs": [
+      "<span class='chapter-number'>1</span>  <span class='chapter-title'>UC10 Document Anonymizer</span>"
+    ]
+  },
+  {
+    "objectID": "index.html#privacy-design",
+    "href": "index.html#privacy-design",
+    "title": "UC10 Document Anonymizer",
+    "section": "0.2 Privacy design",
+    "text": "0.2 Privacy design\n\nEverything runs on the local machine in Docker: Docling, the anonymizer and Neo4j. During a 46-page run every connection stayed inside the local Docker network; host ports listen on 127.0.0.1 only.\nNot yet enforced by the network: the containers could reach the internet. Blocking that is requested.\nThe written file is read back; if any original is still in it, no file is produced.\nThe key (keys/) reverses the anonymization, so it is personal data: it is kept apart from output/ and out of git.\nThe repo folder is synced by Nextcloud, so originals and keys also reach the Nextcloud server.\nA Dutch one-pager for users: output/Onepager - lokaal anonimiseren.pdf.",
+    "crumbs": [
+      "<span class='chapter-number'>1</span>  <span class='chapter-title'>UC10 Document Anonymizer</span>"
+    ]
+  },
+  {
+    "objectID": "index.html#stack-local-2026-10-01",
+    "href": "index.html#stack-local-2026-10-01",
+    "title": "UC10 Document Anonymizer",
+    "section": "0.3 Stack (local, 2026-10-01)",
+    "text": "0.3 Stack (local, 2026-10-01)\n\n\n\n\n\n\n\n\nComponent\nService\nAddress\n\n\n\n\nDocument parsing\nDocling (docling-serve v1.35, async API, no OCR)\nlocalhost:5001\n\n\nDetection + rewriting\nuc10-anonymizer: Presidio + spaCy nl_core_news_lg, en_core_web_lg; PyMuPDF\nlocalhost:5010\n\n\nLabel registry\nNeo4j\nbolt://localhost:7687\n\n\nAudit trail (planned)\nLangfuse\nlocalhost:3100\n\n\nEncrypted storage (planned)\nMinIO bucket doc-anonymizer\nserver, currently down",
+    "crumbs": [
+      "<span class='chapter-number'>1</span>  <span class='chapter-title'>UC10 Document Anonymizer</span>"
+    ]
+  },
+  {
+    "objectID": "index.html#try-it",
+    "href": "index.html#try-it",
+    "title": "UC10 Document Anonymizer",
+    "section": "0.4 Try it",
+    "text": "0.4 Try it\n# Anonymize everything in input/ (target company in input/targets.txt)\npython3 scripts/anonymize_folder.py\n\n# Checks\npython3 tests/dry_run.py            # service, Docling, DOCX + PDF same-format output\npython3 tests/eval_detection.py     # leaks and false positives on the evaluation texts\nThe service code is in service/app.py; the container is built by the localstack in InstallLocalAiPackage.",
+    "crumbs": [
+      "<span class='chapter-number'>1</span>  <span class='chapter-title'>UC10 Document Anonymizer</span>"
+    ]
+  },
+  {
+    "objectID": "workflow.html",
+    "href": "workflow.html",
+    "title": "2  Workflow",
+    "section": "",
+    "text": "2.1 Steps\nA PDF or DOCX goes into input/; the same file comes out in output/ with names of people (and their email, phone, student number, bank account) and the target company replaced by stable labels (PERSOON_1, ORGANISATIE_1, …), layout intact. Everything else stays readable, including published references. The key that reverses the labels goes to keys/. Everything runs on the local stack; audit tracing, storage and network isolation are not built yet.\n11 steps: 8 working, 3 planned, not built. Latest dry-run: 2026-09-30. Updated 2026-10-01.\n✅ Working · ⚠️ Partial / unverified · ❌ Broken / blocked · ⏳ Planned, not built · solid arrow = automated · dashed arrow = not wired yet",
+    "crumbs": [
+      "<span class='chapter-number'>2</span>  <span class='chapter-title'>Workflow</span>"
+    ]
+  },
+  {
+    "objectID": "workflow.html#steps",
+    "href": "workflow.html#steps",
+    "title": "2  Workflow",
+    "section": "",
+    "text": "Step\nService\nStatus\nSource\nNote\n\n\n\n\nPDF / DOCX in input/ + targets.txt\nscripts/anonymize_folder.py\n✅ Working\nmanual\n\n\n\nRead text, headings, tables\nDocling (async API, no OCR)\n✅ Working\nmanual\n~6 s per PDF page on CPU; scanned PDFs are refused\n\n\nFind people + identifiers (NL + EN)\nPresidio + spaCy\n✅ Working\nmanual\nsecond pass on the file’s own text; references and citations stay readable\n\n\nMask the target company\ninput/targets.txt\n✅ Working\nmanual\neverywhere, also in citations, URLs and the file name\n\n\nSame person → same label\nNeo4j (hash + label only)\n✅ Working\nmanual\n\n\n\nRewrite the original file\nDOCX XML / PDF redaction\n✅ Working\nmanual\nread back; no file when an original is left\n\n\noutput/_anon.pdf\n\n✅ Working\nmanual\n\n\n\nKey (entity map)\nkeys/\n✅ Working\nmanual\n\n\n\nNo internet for pipeline containers\nInstallLocalAiPackage request\n⏳ Planned, not built\nmanual\nverified by code and connection check, not yet enforced\n\n\nAudit trace (hashes only)\nLangfuse\n⏳ Planned, not built\nmanual\n\n\n\nEncrypted storage\nMinIO doc-anonymizer\n⏳ Planned, not built\nmanual\nMinIO is on the server, which is down",
+    "crumbs": [
+      "<span class='chapter-number'>2</span>  <span class='chapter-title'>Workflow</span>"
+    ]
+  },
+  {
+    "objectID": "architecture.html",
+    "href": "architecture.html",
+    "title": "3  Architecture",
+    "section": "",
+    "text": "3.1 What is anonymized\nTwo things, decided 2026-10-01:\nEverything else stays readable: other organisations, software (ERP, PLM), places, dates, job titles, and published references (the reference list and author-year citations like “(Yin, 2018)”). The target company is masked there too, because a cited company report would give it away.",
+    "crumbs": [
+      "System Design",
+      "<span class='chapter-number'>3</span>  <span class='chapter-title'>Architecture</span>"
+    ]
+  },
+  {
+    "objectID": "architecture.html#what-is-anonymized",
+    "href": "architecture.html#what-is-anonymized",
+    "title": "3  Architecture",
+    "section": "",
+    "text": "People: names (full names, and a surname used on its own later), plus what identifies a person directly: email address, phone number, student or employee number, bank account (IBAN).\nThe target company: the organisation the research was done for, named by the user in input/targets.txt (one company per line, other names of the same company after |).",
+    "crumbs": [
+      "System Design",
+      "<span class='chapter-number'>3</span>  <span class='chapter-title'>Architecture</span>"
+    ]
+  },
+  {
+    "objectID": "architecture.html#data-flow-local-stack",
+    "href": "architecture.html#data-flow-local-stack",
+    "title": "3  Architecture",
+    "section": "3.2 Data flow (local stack)",
+    "text": "3.2 Data flow (local stack)\ninput/&lt;name&gt;.pdf|docx + input/targets.txt\n        |\n        v\nscripts/anonymize_folder.py  ──POST /anonymize?document=true&targets=…──&gt;  uc10-anonymizer (127.0.0.1:5010)\n                                                                              |\n  1. Docling (docling:5001, async API, pdf_backend pypdfium2, no OCR)  &lt;──────+  PDF/DOCX → markdown\n  2. Detection on the markdown (Presidio + spaCy nl_core_news_lg / en_core_web_lg)\n       - markdown stripped for the NER (bold markers, one table cell per line), offsets mapped back\n       - per-line language routing; long texts analysed in 50k-character chunks\n       - organisations and places are detected only to win overlaps against wrong person guesses,\n         then dropped; common words, defined abbreviations and respondent codes are not names\n       - reference section and citations are protected\n  3. Second detection pass on the file's own text (PDF text layer / Word paragraphs):\n       Docling sometimes writes text differently (\"22-06-2026\" became a list item)\n  4. Target company names (all given aliases), surnames of detected full names\n  5. Labels from Neo4j (neo4j:7687): hash(type|value) → PERSOON_n / ID_n / ORGANISATIE_n, global and stable\n  6. Rewrite the original file:\n       DOCX: text replaced inside the Word XML across runs (body, tables, headers, footers, footnotes,\n             comments, tracked changes, field codes, hyperlinks); author properties and comment authors removed\n       PDF:  text redacted with PyMuPDF (removed, not covered), label drawn in an embedded font in the\n             original size and colour; PII links, comments, forms, bookmarks, metadata, attachments and\n             the structure tree removed\n  7. Read-back check: if any original is still in the written file, no document is returned\n        |\n        v\noutput/&lt;name with people and target masked&gt;_anon.pdf        (non-PDF input: output/&lt;name&gt;/)\nkeys/&lt;name&gt;.&lt;ext&gt;.entity_map.json, keys/done.json           (the key; personal data, not shared)",
+    "crumbs": [
+      "System Design",
+      "<span class='chapter-number'>3</span>  <span class='chapter-title'>Architecture</span>"
+    ]
+  },
+  {
+    "objectID": "architecture.html#privacy-design",
+    "href": "architecture.html#privacy-design",
+    "title": "3  Architecture",
+    "section": "3.3 Privacy design",
+    "text": "3.3 Privacy design\n\nThe service connects only to Docling and Neo4j. During a 46-page run, every connection of the anonymizer and Docling stayed inside the local Docker network. Host ports are bound to 127.0.0.1.\nNot yet enforced: the containers can reach the internet. Network isolation is requested in InstallLocalAiPackage/REQUEST-uc10-network-isolation.md.\nNeo4j stores a SHA-256 hash, the label and the type; never the original value.\nThe entity map reverses the anonymization, so it is personal data: it is written to keys/, apart from output/, and kept out of git.\nThe repo folder is in Nextcloud, so input/, output/ and keys/ are synced to the Nextcloud server.\nUsers get a Dutch one-pager on this: output/Onepager - lokaal anonimiseren.pdf (source docs/onepager-lokaal.html).",
+    "crumbs": [
+      "System Design",
+      "<span class='chapter-number'>3</span>  <span class='chapter-title'>Architecture</span>"
+    ]
+  },
+  {
+    "objectID": "architecture.html#service",
+    "href": "architecture.html#service",
+    "title": "3  Architecture",
+    "section": "3.4 Service",
+    "text": "3.4 Service\n\nservice/app.py, FastAPI; localstack container uc10-anonymizer (Dockerfile in InstallLocalAiPackage builds from this repo’s service/). Rebuild after a change: docker compose -f docker-compose.yml -f docker-compose.laptop.yml up -d --build --no-deps uc10-anonymizer\nDependencies: presidio 2.2.356, spaCy 3.7.6 with nl_core_news_lg 3.7.0 and en_core_web_lg 3.7.1, PyMuPDF 1.26.4 (AGPL: fine internally, decide before distributing), pymupdf-fonts, lxml, pyspellchecker.\nMemory: 3 GB limit, ~1.7 GB in use (both LG models; 1.5 GB OOM-kills them).",
+    "crumbs": [
+      "System Design",
+      "<span class='chapter-number'>3</span>  <span class='chapter-title'>Architecture</span>"
+    ]
+  },
+  {
+    "objectID": "architecture.html#labels",
+    "href": "architecture.html#labels",
+    "title": "3  Architecture",
+    "section": "3.5 Labels",
+    "text": "3.5 Labels\n\n\n\nType\nExample\nLabel\n\n\n\n\nPerson\nJan de Vries, later “De Vries”\nPERSOON_1\n\n\nTarget company\nAcme Trailers, acmetrailers.nl\nORGANISATIE_1\n\n\nStudent / employee number\nS1234567\nID_1\n\n\nEmail address\njan@example.nl\nEMAIL_1\n\n\nPhone number\n06-12345678\nTELEFOON_1\n\n\nBank account\nNL91ABNA0417164300\nIBAN_1\n\n\n\nLabels are global and stable: the same value of the same type gets the same label in every document.",
+    "crumbs": [
+      "System Design",
+      "<span class='chapter-number'>3</span>  <span class='chapter-title'>Architecture</span>"
+    ]
+  },
+  {
+    "objectID": "architecture.html#tests",
+    "href": "architecture.html#tests",
+    "title": "3  Architecture",
+    "section": "3.6 Tests",
+    "text": "3.6 Tests\n\ntests/dry_run.py: service health, anonymize, consistency, DOCX and PDF through Docling, same-format output checked with independent tools; writes test-results/dry_run_*.json.\ntests/eval_detection.py: fictional NL/EN/mixed texts; counts leaks (people and target company still readable) and false positives (anything else masked). 2026-10-01: 0 leaks of 44, 0 false positives.",
+    "crumbs": [
+      "System Design",
+      "<span class='chapter-number'>3</span>  <span class='chapter-title'>Architecture</span>"
+    ]
+  },
+  {
+    "objectID": "architecture.html#phase-2-role-aware-labels-future-work",
+    "href": "architecture.html#phase-2-role-aware-labels-future-work",
+    "title": "3  Architecture",
+    "section": "3.7 Phase 2 — role-aware labels (future work)",
+    "text": "3.7 Phase 2 — role-aware labels (future work)\nInterview transcripts distinguish speakers. A later version could emit INTERVIEWER_1 and RESPONDENT_1 instead of PERSOON_n, by parsing speaker turns before detection.",
+    "crumbs": [
+      "System Design",
+      "<span class='chapter-number'>3</span>  <span class='chapter-title'>Architecture</span>"
+    ]
+  },
+  {
+    "objectID": "plan.html",
+    "href": "plan.html",
+    "title": "4  Plan",
+    "section": "",
+    "text": "4.1 Scope decision (2026-10-01)\nLast updated: 2026-10-01 · Task marks: ✅ DONE · 🟡 IN PROGRESS · ⛔ BLOCKED · no mark = to do Epics are ordered from very simple to advanced; each one ends in working software you can demo. Requirements (services, tools, access, data, decisions) are in docs/requirements.yml. Workflow with live status: docs/workflow.yml (rendered in the book and the ResearchReady workbook).\nOnly two things are anonymized: names of people (plus what identifies them directly: email, phone, student/employee number, bank account) and the target company (the organisation the research was for, named in input/targets.txt, one company per line, aliases after |). Other organisations, software (ERP, PLM), places, dates, job titles and published references stay readable. The target company is masked everywhere, including citations, references, URLs and the output file name. Eval set: 0 leaks of 44, 0 false positives. Users get a Dutch one-pager on local processing: docs/onepager-lokaal.html. Network isolation of the pipeline containers is requested in InstallLocalAiPackage/REQUEST-uc10-network-isolation.md; update the one-pager’s “Nog niet afgedwongen” block when that is done.",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Plan</span>"
+    ]
+  },
+  {
+    "objectID": "plan.html#next-2026-10-01",
+    "href": "plan.html#next-2026-10-01",
+    "title": "4  Plan",
+    "section": "4.2 Next (2026-10-01)",
+    "text": "4.2 Next (2026-10-01)\n\nMove _NAME_WORDS (1,059 words) out of service/app.py into a data file; needs the Dockerfile to COPY it (request to InstallLocalAiPackage).\nRemaining person false positives in the thesis: “Max depth” (table heading), “Appendix F.”.\nBSN (11-proof) recogniser; grow the eval set (T7).\nWhen network isolation is done: change the one-pager’s “Nog niet afgedwongen” block and re-render its PDF.\nNot committed: no commits while the stack is fully local (CLAUDE.md).",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Plan</span>"
+    ]
+  },
+  {
+    "objectID": "plan.html#goal",
+    "href": "plan.html#goal",
+    "title": "4  Plan",
+    "section": "4.3 Goal",
+    "text": "4.3 Goal\nA fully local anonymiser for research documents: a PDF or DOCX goes in, and the same document comes out with the names of people (and their email, phone, student number, bank account) and the target company replaced by stable labels (PERSOON_1, ORGANISATIE_1, …), layout intact. Everything else stays readable. The key (entity map) is kept apart. Labels are consistent across all documents. No cloud LLMs; Dutch and English.",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Plan</span>"
+    ]
+  },
+  {
+    "objectID": "plan.html#current-status-2026-10-01-local-stack",
+    "href": "plan.html#current-status-2026-10-01-local-stack",
+    "title": "4  Plan",
+    "section": "4.4 Current status (2026-10-01, local stack)",
+    "text": "4.4 Current status (2026-10-01, local stack)\n\nResearchers can use it: files in input/, target company in input/targets.txt, python3 scripts/anonymize_folder.py; the anonymized file in the same format in output/, the key in keys/.\nService uc10-anonymizer on localhost:5010 (localstack); Docling works locally (async API).\ntests/dry_run.py passes; tests/eval_detection.py: 0 leaks of 44, 0 false positives.\nFirst real document: a 46-page thesis (PDF + DOCX), author, supervisors and student number removed.\nNot built: Langfuse trace, MinIO storage (server down), network isolation (requested).\nBook (docs/book/) and user one-pager (output/Onepager - lokaal anonimiseren.pdf) are up to date.",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Plan</span>"
+    ]
+  },
+  {
+    "objectID": "plan.html#definition-of-done",
+    "href": "plan.html#definition-of-done",
+    "title": "4  Plan",
+    "section": "4.5 Definition of done",
+    "text": "4.5 Definition of done\n\nA PDF or DOCX in returns the same format out, with layout preserved; the key goes to keys/. ✅\nLeaks and false positives are measured on an NL + EN test set and meet agreed targets. 🟡 (set of 11 texts)\nDutch identifiers of people are caught: BSN, IBAN, student/employee number. 🟡 (BSN to do)\nEach document produces one Langfuse trace containing hashes and labels only.\nOutputs are stored encrypted in MinIO and versioned in Gitea.\ntests/dry_run.py writes passing test-results/ JSON. ✅\nThe pipeline containers cannot reach the internet (requested in InstallLocalAiPackage).",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Plan</span>"
+    ]
+  },
+  {
+    "objectID": "plan.html#epic-1-anonymise-plain-text",
+    "href": "plan.html#epic-1-anonymise-plain-text",
+    "title": "4  Plan",
+    "section": "4.6 Epic 1: Anonymise plain text",
+    "text": "4.6 Epic 1: Anonymise plain text\nWorking software: POST text to /anonymize and get it back with PERSOON_1, ORGANISATIE_1, … and an entity map.\nDemo: curl -F file=@tests/sample.txt …/anonymize replaces all 22 entities.\nRequires: presidio\n\n4.6.1 T1 — Presidio service on CT140 ✅ DONE\nDone when: /health and /anonymize respond (2026-09-28).",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Plan</span>"
+    ]
+  },
+  {
+    "objectID": "plan.html#epic-2-consistent-and-measured",
+    "href": "plan.html#epic-2-consistent-and-measured",
+    "title": "4  Plan",
+    "section": "4.7 Epic 2: Consistent and measured",
+    "text": "4.7 Epic 2: Consistent and measured\nWorking software: Labels are stable across documents; Dutch identifiers are caught; precision and recall are reported on every dry-run.\nDemo: Run the evaluation set: per-type precision/recall in test-results/ JSON; the same name gets the same label in two files.\nRequires: presidio, neo4j · Dutch recognisers, evaluation set\n\n4.7.1 T2 — Stable labels with global consistency ✅ DONE\nDone when: the same input always gets the same label across uploads (Neo4j LabelCounter).\n\n\n4.7.2 T6 — Dutch identifier recognisers\nWhat: Presidio pattern recognisers for BSN (with 11-proof), IBAN, postcode, KvK, licence plate. Done when: each type is detected in the test set.\n\n\n4.7.3 T7 — Evaluation set and metrics\nFirst real document (2026-09-30): a 46-page English master’s thesis (PDF, plus a DOCX made from it). Author, student number, supervisors and submission date are all removed from both outputs. Findings: - Heavy over-masking by the English NER: capitalised terms become ORGANISATIE/PERSOON (“Bill of Materials”, “Submission”, “Second”), journal names and cited authors in the reference list too. Safe but hurts readability. Decided 2026-09-30: published references stay readable. The reference section (heading up to the next heading/appendix) and author-year citations (“(Yin, 2018)”, “Eisenhardt (1989)”) are not detected or replaced; appendices are. Thesis: 669 → 177 masked values. Eval case cite-en guards this. - Over-masking of title-case words fixed 2026-09-30 (thesis: 177 → 59 masked values): - an NER guess whose every word also occurs in lowercase in the same document is a common word (“Submission”, “Engineering”, “Planning & Control”); emails/URLs don’t count, and a word that is part of a detected full name stays a name (“Volgens Bakker” after “Jan Bakker”); rule-based results are never dropped; - abbreviations the document defines from common words (“Enterprise Resource Planning (ERP)”), technical terms like eBOM/mBOM, and respondent codes (R1–R11) stay readable; - surnames used on their own get the full name’s label (“De Vries said” → PERSOON_3); - written-out dates in both languages are a pattern rule now (“12 May 2026” on a line without context was missed). Eval cases title-words and nl-surname-words guard this. Still masked on purpose: interviewee job titles (quasi-identifiers in a single-company case). Still over-masked: single title words that never occur in lowercase in the document (“Master”, “Submission”) and concepts like “Bill of Materials” when “bill” never does. Known trade-off: an organisation whose name is only common words (“Beter Wonen”) is left readable unless a rule catches it (“Stichting Beter Wonen”, “… BV”). - Text in images (the university logo) is not touched. - Hyphenation at PDF line breaks: Docling joins the word, the file keeps the hyphen; reported as “not found in the file” (6 values in the thesis, none personal data). - Docling needs ~6 s per page on CPU (OCR off): 4-5 minutes for the thesis. - File names hold names too (“Thesis Eva Jansen - Voorbeeldbedrijf.pdf”). Decided 2026-09-30: output is output/&lt;name&gt;_anon.pdf (the original name, readable, by choice); non-PDF outputs in output/&lt;name&gt;/; entity maps (the keys) in keys/, apart from output/ so that folder can be shared. - Labels in PDFs: embedded font (the document’s own when it has the glyphs, else Noto Sans), original size and colour; too wide → squeezed, then shrunk (floor 40 %). Short originals (citations “Yin, 2018”, terms like “ETO”) still get small labels: a 10-15 character label in the space of 2-4 characters. What: 20 annotated documents (NL + EN) with expected entities; script that reports precision/recall per type. Done when: metrics are reported per run and targets are agreed.\n\n\n4.7.4 T4 — Dry-run writes JSON results 🟡 IN PROGRESS\nWhat: tests/dry_run.py writes test-results/dry_run_YYYYMMDD_HHMMSS.json with named steps. Done when: the ResearchReady workbook shows UC10’s dry-run. Status (2026-09-30): JSON written (13 checks, incl. DOCX + PDF via Docling and a leftover-fragment check). Workbook part ⛔ until the server is back.",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Plan</span>"
+    ]
+  },
+  {
+    "objectID": "plan.html#epic-3-documents-in-documents-out",
+    "href": "plan.html#epic-3-documents-in-documents-out",
+    "title": "4  Plan",
+    "section": "4.8 Epic 3: Documents in, documents out",
+    "text": "4.8 Epic 3: Documents in, documents out\nWorking software: A DOCX or PDF goes in and the same format comes out, anonymised, with headings and tables intact.\nDemo: Anonymise a DOCX with a table; open the result in Word.\nRequires: docling, docconvert\n\n4.8.1 T3 — Restore Docling on CT107\nWhat: bring CT107 back (shared with UC1); keep the plain-text fallback. Done when: the dry-run’s Docling step passes and layout-aware markdown is used again.\n\n\n4.8.2 T5 — Rebuild the document 🟡 IN PROGRESS\nWhat: replace spans in the Docling markdown and convert back with docconvert CT122 (DOCX) or render PDF. Changed 2026-09-30: the entity map is applied to the original file (/anonymize?document=true), so docconvert is not needed. DOCX: text replaced in the Word XML (body, tables, headers/footers, footnotes, comments, tracked changes, field codes, hyperlinks); author/company properties and comment authors removed. PDF: text redacted (removed) with PyMuPDF and the label written in its place; links with PII, comments, form fields, bookmarks, attachments, metadata and the structure tree removed. The service reads the file back and returns no document if any original is still in it. Done when: a DOCX in gives an anonymised DOCX out with headings and tables intact. ✅ DOCX and PDF (dry-run step 8). Still open: test on real research documents; scanned PDFs are refused (no OCR redaction); a surname hyphenated across a PDF line break is not matched (the read-back check does not catch that either); PyMuPDF is AGPL (fine for internal use, decide before distributing).",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Plan</span>"
+    ]
+  },
+  {
+    "objectID": "plan.html#epic-4-audited-and-stored",
+    "href": "plan.html#epic-4-audited-and-stored",
+    "title": "4  Plan",
+    "section": "4.9 Epic 4: Audited and stored",
+    "text": "4.9 Epic 4: Audited and stored\nWorking software: Every document leaves a Langfuse trace with hashes only, and the output is stored encrypted and versioned.\nDemo: Open the trace (no original values), the MinIO object and the Gitea commit.\nRequires: langfuse, minio, gitea\n\n4.9.1 T8 — Langfuse audit trace\nDone when: one trace per document with a span per entity (type, hash, label — never the original).\n\n\n4.9.2 T9 — Encrypted storage in MinIO\nDone when: output and entity map stored in bucket doc-anonymizer with server-side encryption.\n\n\n4.9.3 T10 — Versioned output in Gitea\nDone when: each anonymised document is committed with its entity-map hash.",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Plan</span>"
+    ]
+  },
+  {
+    "objectID": "plan.html#epic-5-researchers-use-it",
+    "href": "plan.html#epic-5-researchers-use-it",
+    "title": "4  Plan",
+    "section": "4.10 Epic 5: Researchers use it",
+    "text": "4.10 Epic 5: Researchers use it\nWorking software: Researchers anonymise files without curl, and interview transcripts keep speaker roles.\nDemo: A researcher uploads a transcript and gets INTERVIEWER_1 / RESPONDENT_1 labels.\nRequires: openwebui or n8n\n\n4.10.1 T11 — Upload entry point\nWhat: a simple upload page, or an OpenWebUI tool / n8n webhook, for researchers. Done when: a researcher can anonymise a file without curl.\n\n\n4.10.2 T12 — Role-aware labels (phase 2)\nWhat: detect speaker turns in interview transcripts and emit INTERVIEWER_1 / RESPONDENT_1. Done when: a transcript keeps who-said-what without names.",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Plan</span>"
+    ]
+  },
+  {
+    "objectID": "plan.html#risks-blockers",
+    "href": "plan.html#risks-blockers",
+    "title": "4  Plan",
+    "section": "4.11 Risks & blockers",
+    "text": "4.11 Risks & blockers\n\n\n\n\n\n\n\n\nRisk / blocker\nImpact\nMitigation\n\n\n\n\nMissed PII\nPersonal data leaks into research output\nT6 recognisers, T7 metrics, human spot checks\n\n\nEntity map is itself personal data\nRe-identification if leaked\nStore encrypted (T9); access-restricted; never in Langfuse\n\n\nDocling down\nLayout lost\nT3; fallback already in place\n\n\nspaCy LG models need 2.5 GB RAM\nOOM on CT140\nKeep RAM at 2.5 GB in the Ansible role",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Plan</span>"
+    ]
+  },
+  {
+    "objectID": "plan.html#open-decisions",
+    "href": "plan.html#open-decisions",
+    "title": "4  Plan",
+    "section": "4.12 Open decisions",
+    "text": "4.12 Open decisions\n\n\n\n\n\n\n\n\n#\nQuestion\nOptions\n\n\n\n\n1\nAccuracy targets\ne.g. recall ≥ 95 % for PERSON / ORG, ≥ 99 % for BSN / IBAN\n\n\n2\nEntry point for researchers\nUpload page / OpenWebUI tool / n8n webhook\n\n\n3\nEntity-map retention\nKeep per project / delete after export",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Plan</span>"
+    ]
+  },
+  {
+    "objectID": "plan.html#documentation-readiness",
+    "href": "plan.html#documentation-readiness",
+    "title": "4  Plan",
+    "section": "4.13 Documentation & readiness",
+    "text": "4.13 Documentation & readiness\n\n4.13.1 D1 — Quarto book ✅ DONE\ndocs/book/ created 2026-09-28 from the README and docs.\n\n\n4.13.2 D2 — Colour-coded workflow ✅ DONE\ndocs/workflow.yml.\n\n\n4.13.3 D3 — Complete plan ✅ DONE\nThis file.\n\n\n4.13.4 D4 — Expand the README\nDone when: README explains the problem, pipeline, privacy design and how to run it (≥ 50 lines).\n\n\n4.13.5 D5 — Services and recovery runbooks\nDone when: docs/services.md and docs/recovery.md exist.\n\n\n4.13.6 D6 — Example output\nDone when: example_outputs/ holds an anonymised sample and its (synthetic) entity map.\n\n\n4.13.7 D7 — Build the book in CI\nDone when: .gitea/workflows/render-book.yml publishes docs/book/ on push.",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Plan</span>"
+    ]
+  },
+  {
+    "objectID": "requirements.html",
+    "href": "requirements.html",
+    "title": "5  Requirements",
+    "section": "",
+    "text": "5.1 Shared services\nLive service status from the ResearchReady probe (2026-09-30T22:05). ✅ up / available · ⚠️ partial · ❔ not probed (internal only or no public route) · ❌ down / broken · ⏳ missing · ❓ open decision.",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Requirements</span>"
+    ]
+  },
+  {
+    "objectID": "requirements.html#shared-services",
+    "href": "requirements.html#shared-services",
+    "title": "5  Requirements",
+    "section": "",
+    "text": "Item\nStatus\nNeeded for\nNote\n\n\n\n\npresidio — anonymisation service (uc10-anonymizer, localstack :5010; CT140 when the server is back)\n❔ not probed\nEpic 1\nCT140\n\n\nneo4j — global label registry\n❔ not probed\nEpic 2\nCT114 · https://neo4j.research-ready.nl\n\n\ndocling — layout-aware parsing\n❔ not probed\nEpic 3\nCT107 · https://docling.research-ready.nl\n\n\nlangfuse — audit trace (hashes only)\n❔ not probed\nEpic 4\nCT112 · https://langfuse.research-ready.nl\n\n\nminio — encrypted storage\n❔ not probed\nEpic 4\nCT103 · https://minio.research-ready.nl\n\n\ngitea — versioned output\n❔ not probed\nEpic 4\nCT200 · https://gitea.research-ready.nl\n\n\nopenwebui — researcher entry point (tool)\n❔ not probed\nEpic 5\nCT106 · https://openwebui.research-ready.nl\n\n\nn8n — researcher entry point (webhook)\n❔ not probed\nEpic 5\nCT104 · https://n8n.research-ready.nl",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Requirements</span>"
+    ]
+  },
+  {
+    "objectID": "requirements.html#tools-code",
+    "href": "requirements.html#tools-code",
+    "title": "5  Requirements",
+    "section": "5.2 Tools & code",
+    "text": "5.2 Tools & code\n\n\n\n\n\n\n\n\n\nItem\nStatus\nNeeded for\nNote\n\n\n\n\nPresidio FastAPI service (service/app.py)\n✅ available\nEpic 1\n\n\n\nspaCy nl_core_news_lg + en_core_web_lg\n✅ available\nEpic 1\n\n\n\nIdentifiers of people: IBAN, student/employee number\n✅ available\nEpic 2\n\n\n\nBSN recogniser (11-proof)\n⏳ missing\nEpic 2\n\n\n\nSame-format output: DOCX XML rewrite, PDF redaction (PyMuPDF), read-back check\n✅ available\nEpic 3\n\n\n\nEvaluation script (tests/eval_detection.py: leaks and false positives)\n✅ available\nEpic 2\n\n\n\nFolder workflow (scripts/anonymize_folder.py: input/ → output/ + keys/)\n✅ available\nEpic 5\n\n\n\nDutch one-pager for users on local processing\n✅ available\nEpic 5\n\n\n\nNetwork isolation of the pipeline containers (requested)\n⏳ missing\nEpic 4",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Requirements</span>"
+    ]
+  },
+  {
+    "objectID": "requirements.html#access-keys",
+    "href": "requirements.html#access-keys",
+    "title": "5  Requirements",
+    "section": "5.3 Access & keys",
+    "text": "5.3 Access & keys\n\n\n\nItem\nStatus\nNeeded for\nNote\n\n\n\n\nNeo4j password\n✅ available\nEpic 2\n\n\n\nMinIO bucket doc-anonymizer with SSE\n⏳ missing\nEpic 4\n\n\n\nLangfuse project keys for UC10\n⏳ missing\nEpic 4",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Requirements</span>"
+    ]
+  },
+  {
+    "objectID": "requirements.html#data",
+    "href": "requirements.html#data",
+    "title": "5  Requirements",
+    "section": "5.4 Data",
+    "text": "5.4 Data\n\n\n\n\n\n\n\n\n\nItem\nStatus\nNeeded for\nNote\n\n\n\n\nSample text (tests/sample.txt)\n✅ available\nEpic 1\n\n\n\nNL + EN evaluation set (11 texts; target 20 documents)\n⚠️ partial\nEpic 2\n\n\n\nSample PDF / DOCX with tables and headings (tests/interview.*, a real thesis)\n✅ available\nEpic 3",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Requirements</span>"
+    ]
+  },
+  {
+    "objectID": "requirements.html#decisions-external-actions",
+    "href": "requirements.html#decisions-external-actions",
+    "title": "5  Requirements",
+    "section": "5.5 Decisions & external actions",
+    "text": "5.5 Decisions & external actions\n\n\n\n\n\n\n\n\n\nItem\nStatus\nNeeded for\nNote\n\n\n\n\nScope: people and the target company only (decided 2026-10-01)\n✅ available\nEpic 2\n\n\n\nPublished references stay readable (decided 2026-09-30)\n✅ available\nEpic 2\n\n\n\nAccuracy targets\n❓ open decision\nEpic 2\n\n\n\nResearcher entry point beyond the folder: upload page / OpenWebUI tool / n8n\n❓ open decision\nEpic 5\n\n\n\nEntity-map retention\n❓ open decision\nEpic 4",
+    "crumbs": [
+      "Operations",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Requirements</span>"
+    ]
+  }
+]

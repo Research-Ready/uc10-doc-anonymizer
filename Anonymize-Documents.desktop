@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Anonymize Documents (Local)
+Comment=Run UC10 Document Anonymizer with 100% local models
+Exec=konsole --noclose -e /bin/bash /home/chris/Nextcloud/Github/uc10-doc-anonymizer/go.sh
+Icon=document-decrypt
+Path=/home/chris/Nextcloud/Github/uc10-doc-anonymizer
+Terminal=false
+Categories=Utility;Office;

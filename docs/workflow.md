@@ -1,0 +1,68 @@
+# UC10 Document Anonymizer — workflow
+
+<!-- Generated from docs/workflow.yml by ResearchReady/workbook/scripts/workflows.py --write-repos. Edit the YAML, not this file. -->
+
+A PDF or DOCX goes into input/; the same file comes out in output/ with names of people (and their email, phone, student number, bank account) and the target company replaced by stable labels (PERSOON_1, ORGANISATIE_1, …), layout intact. Everything else stays readable, including published references. The key that reverses the labels goes to keys/. Everything runs on the local stack; audit tracing, storage and network isolation are not built yet.
+
+**11 steps:** 8 working, 3 planned, not built. Latest dry-run: 2026-09-30. Updated 2026-10-01.
+
+✅ **Working** · ⚠️ **Partial / unverified** · ❌ **Broken / blocked** · ⏳ **Planned, not built** · solid arrow = automated · dashed arrow = not wired yet
+
+```mermaid
+flowchart LR
+    subgraph lane_input["Input"]
+        n_upload(["✅ PDF / DOCX in input/ + targets.txt<br/><small>scripts/anonymize_folder.py</small>"])
+        n_parse["✅ Read text, headings, tables<br/><small>Docling (async API, no OCR)</small>"]
+    end
+    subgraph lane_anonymise["Anonymise (uc10-anonymizer :5010)"]
+        n_detect["✅ Find people + identifiers (NL + EN)<br/><small>Presidio + spaCy</small>"]
+        n_target["✅ Mask the target company<br/><small>input/targets.txt</small>"]
+        n_registry[("✅ Same person → same label<br/><small>Neo4j (hash + label only)</small>")]
+    end
+    subgraph lane_output["Output"]
+        n_rewrite["✅ Rewrite the original file<br/><small>DOCX XML / PDF redaction</small>"]
+        n_out(["✅ output/<name>_anon.pdf"])
+        n_keys[("✅ Key (entity map)<br/><small>keys/</small>")]
+    end
+    subgraph lane_audit["Audit, storage & isolation"]
+        n_isolate["⏳ No internet for pipeline containers<br/><small>InstallLocalAiPackage request</small>"]
+        n_trace["⏳ Audit trace (hashes only)<br/><small>Langfuse</small>"]
+        n_bucket[("⏳ Encrypted storage<br/><small>MinIO doc-anonymizer</small>")]
+    end
+    n_upload --> n_parse
+    n_parse -- markdown --> n_detect
+    n_detect --> n_target
+    n_target --> n_registry
+    n_registry -- labels --> n_rewrite
+    n_rewrite --> n_out
+    n_rewrite --> n_keys
+    n_rewrite -.-> n_trace
+    n_out -.-> n_bucket
+    style lane_input fill:#f7f9fb,stroke:#b0bec5,color:#263238,stroke-width:1px
+    style lane_anonymise fill:#f7f9fb,stroke:#b0bec5,color:#263238,stroke-width:1px
+    style lane_output fill:#f7f9fb,stroke:#b0bec5,color:#263238,stroke-width:1px
+    style lane_audit fill:#f7f9fb,stroke:#b0bec5,color:#263238,stroke-width:1px
+    linkStyle default stroke:#546e7a,stroke-width:2px
+    classDef working fill:#2e7d32,stroke:#1b5e20,color:#ffffff,stroke-width:2px
+    classDef partial fill:#f9a825,stroke:#b07800,color:#1a1a1a,stroke-width:2px
+    classDef broken fill:#c62828,stroke:#7f1010,color:#ffffff,stroke-width:2px
+    classDef planned fill:#eceff1,stroke:#90a4ae,color:#37474f,stroke-width:2px,stroke-dasharray:5 3
+    class n_upload,n_parse,n_detect,n_target,n_registry,n_rewrite,n_out,n_keys working
+    class n_isolate,n_trace,n_bucket planned
+```
+
+## Steps
+
+| Step | Service | Status | Source | Note |
+|---|---|---|---|---|
+| PDF / DOCX in input/ + targets.txt | scripts/anonymize_folder.py | ✅ Working | manual |  |
+| Read text, headings, tables | Docling (async API, no OCR) | ✅ Working | manual | ~6 s per PDF page on CPU; scanned PDFs are refused |
+| Find people + identifiers (NL + EN) | Presidio + spaCy | ✅ Working | manual | second pass on the file's own text; references and citations stay readable |
+| Mask the target company | input/targets.txt | ✅ Working | manual | everywhere, also in citations, URLs and the file name |
+| Same person → same label | Neo4j (hash + label only) | ✅ Working | manual |  |
+| Rewrite the original file | DOCX XML / PDF redaction | ✅ Working | manual | read back; no file when an original is left |
+| output/<name>_anon.pdf |  | ✅ Working | manual |  |
+| Key (entity map) | keys/ | ✅ Working | manual |  |
+| No internet for pipeline containers | InstallLocalAiPackage request | ⏳ Planned, not built | manual | verified by code and connection check, not yet enforced |
+| Audit trace (hashes only) | Langfuse | ⏳ Planned, not built | manual |  |
+| Encrypted storage | MinIO doc-anonymizer | ⏳ Planned, not built | manual | MinIO is on the server, which is down |

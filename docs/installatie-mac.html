@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Installatie op de Mac</title>
+<!-- Same tokens as onepager-lokaal.html. No web fonts. Rendered to PDF with Chrome headless. -->
+<style>
+:root {
+  --bg: #f7f8f7; --paper: #ffffff; --fg: #1c2321; --muted: #56615d; --line: #d6dcd9;
+  --accent: #1f6f5c; --accent-soft: #e3f0ec; --warn: #8a5a00; --warn-soft: #fbf1dc; --label: #1f3a8a;
+  --font-display: "Caladea", Cambria, Georgia, "DejaVu Serif", serif;
+  --font-body: "Lato", "Segoe UI", Calibri, "DejaVu Sans", Arial, sans-serif;
+  --font-mono: "DejaVu Sans Mono", Consolas, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111615; --paper: #182120; --fg: #e4ebe8; --muted: #9aa8a3; --line: #2c3936;
+    --accent: #5cc4a6; --accent-soft: #1d302b; --warn: #e2b04e; --warn-soft: #2e2615; --label: #9bb4ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111615; --paper: #182120; --fg: #e4ebe8; --muted: #9aa8a3; --line: #2c3936;
+  --accent: #5cc4a6; --accent-soft: #1d302b; --warn: #e2b04e; --warn-soft: #2e2615; --label: #9bb4ff;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14.5px; line-height: 1.5;
+  margin: 0; padding: 28px 16px; }
+.sheet { max-width: 820px; margin: 0 auto; background: var(--paper); border: 1px solid var(--line);
+  padding: clamp(20px, 4vw, 40px); display: grid; gap: 22px; }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(26px, 4.4vw, 36px); line-height: 1.1; margin: 0; }
+h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin: 0 0 8px; }
+h3 { font-size: 16px; margin: 0; display: flex; gap: 10px; align-items: baseline; }
+h3 .n { font-family: var(--font-mono); color: var(--paper); background: var(--accent); border-radius: 50%;
+  min-width: 26px; height: 26px; display: inline-grid; place-items: center; font-size: 13px; flex: none; }
+p { margin: 0; max-width: 70ch; }
+.lede { font-size: 16px; }
+.meta { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); }
+code { font-family: var(--font-mono); font-size: .9em; background: var(--accent-soft); padding: 0 .3em; border-radius: 3px; }
+.cmd { font-family: var(--font-mono); font-size: 14px; background: #1c2321; color: #e4ebe8; padding: 10px 14px;
+  border-radius: 4px; white-space: pre-wrap; word-break: break-all; }
+.ui { font-weight: 600; }
+ol, ul { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; }
+.step { border: 1px solid var(--line); padding: 14px 16px; display: grid; gap: 10px; break-inside: avoid; }
+.see { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 8px 12px; font-size: 13.5px; }
+.see b { color: var(--accent); }
+.warn { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 8px 12px; font-size: 13.5px; }
+.warn b { color: var(--warn); }
+.need { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; }
+.need div { border: 1px solid var(--line); padding: 10px; font-size: 13px; display: grid; gap: 2px; }
+.need b { font-size: 13.5px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; vertical-align: top; border-top: 1px solid var(--line); padding: 7px 8px 7px 0; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+td:first-child { width: 38%; }
+.folders { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.folders div { border: 1px solid var(--line); padding: 10px; font-size: 13px; display: grid; gap: 2px; }
+.folders .secret { border-color: var(--warn); background: var(--warn-soft); }
+@media print {
+  @page { size: A4; margin: 14mm 13mm; }
+  body { background: #fff; padding: 0; font-size: 12.5px; }
+  .sheet { border: 0; padding: 0; max-width: none; gap: 14px; }
+  .cmd { font-size: 12.5px; }
+  .pb { break-before: page; }
+}
+</style>
+</head>
+<body>
+<main class="sheet">
+
+<header style="display:grid; gap:8px">
+  <p class="meta">UC10 Document Anonymizer · installatie op macOS · versie 4 november 2026</p>
+  <h1>De anonimiseerder installeren op je Mac</h1>
+  <p class="lede">Deze handleiding gaat ervan uit dat er nog niets op je Mac staat. Je installeert één programma (Docker Desktop),
+  downloadt de anonimiseerder en start hem met één opdracht. Daarna werk je in je browser. Je documenten verlaten je Mac niet.</p>
+</header>
+
+<section>
+  <h2>Wat je nodig hebt</h2>
+  <div class="need">
+    <div><b>Een Mac</b>met een recente macOS-versie (de huidige of een van de twee vorige)</div>
+    <div><b>Minstens 8 GB geheugen</b>16 GB werkt prettiger</div>
+    <div><b>15 GB vrije schijfruimte</b>de onderdelen zijn samen ruim 8 GB</div>
+    <div><b>Internet</b>alleen voor de installatie; daarna werkt alles zonder internet</div>
+    <div><b>Een GitHub-account</b>met toegang tot het project (je krijgt een uitnodiging per e-mail: accepteer die eerst)</div>
+    <div><b>Ongeveer een uur</b>vooral wachten op downloads</div>
+  </div>
+  <p style="margin-top:10px">Geheugen en chip opzoeken: klik linksboven op het Apple-logo → <span class="ui">Over deze Mac</span>.
+  Bij <span class="ui">Chip</span> staat <span class="ui">Apple M1/M2/M3/M4</span> (Apple Silicon) of bij <span class="ui">Processor</span> staat <span class="ui">Intel</span>. Onthoud welke het is.</p>
+</section>
+
+<section class="step">
+  <h3><span class="n">1</span>Docker Desktop installeren</h3>
+  <ol>
+    <li>Ga in je browser naar <code>docker.com/products/docker-desktop</code> en klik op <span class="ui">Download Docker Desktop</span>.</li>
+    <li>Kies <span class="ui">Mac – Apple Silicon</span> of <span class="ui">Mac – Intel</span>, passend bij je chip.</li>
+    <li>Open het gedownloade bestand <code>Docker.dmg</code> en sleep het walvis-icoon naar de map <span class="ui">Programma's</span>.</li>
+    <li>Open <span class="ui">Programma's</span> en dubbelklik op <span class="ui">Docker</span>. Vraagt de Mac of je het wilt openen: klik <span class="ui">Open</span>.</li>
+    <li>Accepteer de voorwaarden, kies <span class="ui">Use recommended settings</span> en typ je Mac-wachtwoord als daarom gevraagd wordt.</li>
+    <li>Inloggen bij Docker is niet nodig: kies <span class="ui">Skip</span> of <span class="ui">Continue without signing in</span>. Vragenlijsten mag je ook overslaan.</li>
+  </ol>
+  <p class="see"><b>Goed als:</b> Docker Desktop open staat en linksonder <span class="ui">Engine running</span> staat (groen). In de menubalk bovenaan staat een walvis-icoon.</p>
+</section>
+
+<section class="step">
+  <h3><span class="n">2</span>Docker genoeg geheugen geven</h3>
+  <ol>
+    <li>Klik in Docker Desktop rechtsboven op het tandwiel (<span class="ui">Settings</span>).</li>
+    <li>Ga naar <span class="ui">Resources</span> (soms daaronder <span class="ui">Advanced</span>) en zoek <span class="ui">Memory</span>.</li>
+    <li>Zet het op <b>minstens 6 GB</b>. Staat het al hoger, laat het dan zo.</li>
+    <li>Klik <span class="ui">Apply &amp; restart</span> en wacht tot weer <span class="ui">Engine running</span> verschijnt.</li>
+  </ol>
+  <p class="warn"><b>Waarom:</b> de taalmodellen (Nederlands en Engels) hebben samen veel geheugen nodig. Met te weinig geheugen start de anonimiseerder niet.</p>
+</section>
+
+<section class="step">
+  <h3><span class="n">3</span>De anonimiseerder downloaden</h3>
+  <ol>
+    <li>Log in op <code>github.com</code> en open <code>github.com/Research-Ready/uc10-doc-anonymizer</code>.</li>
+    <li>Klik op de groene knop <span class="ui">Code</span> en dan op <span class="ui">Download ZIP</span>.</li>
+    <li>Open je map <span class="ui">Downloads</span>. Zie je <code>uc10-doc-anonymizer-main.zip</code>, dubbelklik er dan op. Zie je al een map <code>uc10-doc-anonymizer-main</code>, dan is dat al gebeurd.</li>
+    <li>Zet de map in je thuismap: kies in Finder bovenaan <span class="ui">Ga → Thuismap</span> en sleep de map <code>uc10-doc-anonymizer-main</code> daarheen.</li>
+  </ol>
+  <p class="see"><b>Goed als:</b> je in je thuismap (het huisje met je naam) de map <code>uc10-doc-anonymizer-main</code> ziet, met daarin onder andere <code>install.sh</code>.</p>
+  <p class="warn"><b>Zie je "404" of "Page not found"?</b> Dan heb je nog geen toegang. Accepteer eerst de uitnodiging in je e-mail, of vraag de beheerder om toegang.</p>
+</section>
+
+<section class="step">
+  <h3><span class="n">4</span>Installeren met één opdracht</h3>
+  <ol>
+    <li>Open <span class="ui">Terminal</span>: druk <span class="ui">⌘ Cmd + spatie</span>, typ <code>Terminal</code> en druk <span class="ui">Enter</span>.</li>
+    <li>Typ of plak (<span class="ui">⌘ Cmd + V</span>) deze regel en druk <span class="ui">Enter</span>:
+      <div class="cmd">cd ~/uc10-doc-anonymizer-main</div></li>
+    <li>Typ of plak daarna deze regel en druk <span class="ui">Enter</span>:
+      <div class="cmd">bash install.sh</div></li>
+    <li>Laat het venster open en wacht. De eerste keer duurt dit 15 tot 45 minuten, afhankelijk van je internet.
+      Je ziet stappen <code>[1/5]</code> tot en met <code>[5/5]</code> voorbijkomen en veel regels tekst; dat is normaal.</li>
+  </ol>
+  <p class="warn"><b>Venster "De opdracht python3 vereist de opdrachtregelontwikkelaarstools"?</b> Klik <span class="ui">Niet nu</span>. Dat is niet nodig; de installatie gaat gewoon door.</p>
+  <p class="see"><b>Goed als:</b> je aan het eind in groen ziet: <code>INSTALLATIE SUCCESVOL VOLTOOID!</code>
+  en daarboven <code>✓ UC10 Anonymizer service is gezond</code>. Je mag de Terminal daarna sluiten.</p>
+</section>
+
+<section class="step">
+  <h3><span class="n">5</span>Het dashboard openen en testen</h3>
+  <ol>
+    <li>Open je browser (Safari of Chrome) en ga naar <code>http://localhost:5050</code></li>
+    <li>Bovenaan moet groen <span class="ui">Alle Systemen Operationeel</span> staan.</li>
+    <li>Blijf op het tabblad <span class="ui">📋 Research Workspace</span>. Sleep een document naar het vak
+      <span class="ui">Sleep documenten hierheen of klik om te uploaden</span>.
+      Om te testen kun je het voorbeeld nemen: <code>uc10-doc-anonymizer-main → tests → interview.docx</code>.</li>
+    <li>Optioneel: vul bij <span class="ui">🏢 Stage- of Doelbedrijf maskeren</span> de naam in van het bedrijf waar het onderzoek voor was. Die naam wordt dan overal vervangen.</li>
+    <li>Klik op <span class="ui">▶ SAY GO</span> en wacht tot de verwerking klaar is.</li>
+  </ol>
+  <p class="see"><b>Goed als:</b> het document verschijnt bij de geanonimiseerde bestanden, met namen vervangen door
+  <code>PERSOON_1</code>, <code>PERSOON_2</code>, … Met <span class="ui">🔑 Sleutel</span> zie je welke naam bij welk label hoort.</p>
+</section>
+
+<section>
+  <h2>Waar je bestanden staan</h2>
+  <p style="margin-bottom:8px">Open in Finder je thuismap → <code>uc10-doc-anonymizer-main</code>. Gebruik Finder; de knoppen <span class="ui">Map openen</span> in het dashboard werken in deze versie niet.</p>
+  <div class="folders">
+    <div><b><code>input</code></b>je originele documenten</div>
+    <div><b><code>output</code></b>de geanonimiseerde documenten; deze mag je delen</div>
+    <div class="secret"><b><code>keys</code> · geheim</b>de sleutel: welke naam bij welk label hoort. Nooit meesturen of delen.</div>
+  </div>
+</section>
+
+<section>
+  <h2>Elke volgende keer</h2>
+  <ol>
+    <li>Open <span class="ui">Docker Desktop</span> (Programma's) en wacht op <span class="ui">Engine running</span>.</li>
+    <li>Open <code>http://localhost:5050</code> in je browser. De anonimiseerder start vanzelf mee met Docker; de Terminal heb je niet meer nodig.</li>
+    <li>Klaar? Klik op de walvis in de menubalk → <span class="ui">Quit Docker Desktop</span>. Dat maakt geheugen vrij.</li>
+  </ol>
+  <p class="warn" style="margin-top:10px"><b>Niet gebruiken in deze versie:</b> de knoppen <span class="ui">⬆️ Updates</span> / <span class="ui">Nu Bijwerken</span>,
+  <span class="ui">Map openen</span> en de <span class="ui">Logs</span>-knoppen. Ze werken nog niet op de Mac. Voor een nieuwe versie: vraag de beheerder.</p>
+</section>
+
+<section>
+  <h2>Als het misgaat</h2>
+  <table>
+    <thead><tr><th>Wat je ziet</th><th>Wat je doet</th></tr></thead>
+    <tbody>
+      <tr><td><code>✗ Docker is niet gevonden!</code></td>
+          <td>Docker Desktop is niet geïnstalleerd of nog nooit geopend. Doe stap 1, open Docker Desktop, sluit de Terminal en begin stap 4 opnieuw.</td></tr>
+      <tr><td><code>✗ Docker daemon is momenteel niet actief!</code></td>
+          <td>Open Docker Desktop, wacht op <span class="ui">Engine running</span> en typ opnieuw <code>bash install.sh</code>.</td></tr>
+      <tr><td><code>No such file or directory</code></td>
+          <td>De map staat niet in je thuismap of heeft een andere naam. Controleer stap 3. Tip: typ <code>cd </code> (met spatie), sleep de map vanuit Finder in het Terminal-venster en druk Enter.</td></tr>
+      <tr><td><code>no space left on device</code></td>
+          <td>Te weinig schijfruimte. Maak ruimte vrij (minstens 15 GB) en typ opnieuw <code>bash install.sh</code>.</td></tr>
+      <tr><td>De installatie stopt halverwege met een netwerkfout</td>
+          <td>Controleer je internet en typ opnieuw <code>bash install.sh</code>. Wat al gedownload is, blijft bewaard.</td></tr>
+      <tr><td>Gele melding <code>duurde langer dan 5 minuten</code></td>
+          <td>Meestal te weinig geheugen. Controleer stap 2 (minstens 6 GB), wacht een paar minuten en open dan <code>http://localhost:5050</code>.</td></tr>
+      <tr><td>De browser zegt "Kan geen verbinding maken" bij <code>localhost:5050</code></td>
+          <td>Draait Docker Desktop? Kijk in Docker Desktop bij <span class="ui">Containers</span>: alle vier <code>uc10-…</code> moeten groen zijn. Typ het adres precies zo, met <code>http://</code> (niet https).</td></tr>
+      <tr><td>Dashboard rood: <span class="ui">anonymizer</span> niet gezond</td>
+          <td>Wacht twee minuten (de taalmodellen laden) en ververs de pagina. Blijft het rood: herstart Docker Desktop (walvis → <span class="ui">Restart</span>).</td></tr>
+      <tr><td>Een venster vraagt of Docker inkomende verbindingen mag accepteren</td>
+          <td>Klik <span class="ui">Weiger</span>. De anonimiseerder is alleen op je eigen Mac bereikbaar en heeft dat niet nodig.</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:12px">Lukt het niet? Maak een schermafbeelding (<span class="ui">⌘ Cmd + Shift + 4</span>) van de Terminal of het dashboard en stuur die naar de beheerder.
+  Stuur nooit bestanden uit <code>input</code> of <code>keys</code> mee.</p>
+</section>
+
+</main>
+</body>
+</html>
