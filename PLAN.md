@@ -35,7 +35,9 @@ The key (entity map) is kept apart. Labels are consistent across all documents. 
 
 ## Current status (2026-11-04, macOS readiness, Ubuntu laptop)
 
-- GitHub `Research-Ready/uc10-doc-anonymizer` main replaced with the current code (was 2026-09-30, had no installer/compose/dashboard).
+- GitHub `Research-Ready/uc10-doc-anonymizer` is now PUBLIC with a fresh history (no passwords.kdbx, no real names,
+  no internal infra). Push only via `git push github` (pushes local `public-main` to `main`). The old private repo is
+  renamed `uc10-doc-anonymizer-old-private` and still holds passwords.kdbx in its history: delete it.
 - Fixes for a fresh Mac install, verified here on a rebuilt stack (dry-run 15/15, eval 0/44 leaks, 0 FP):
   spaCy pinned to 3.7.5 (3.7.6 has no linux/arm64 wheel; all 75 deps checked for arm64 wheels);
   `install.sh` no longer aborts on the macOS python3 stub; SAY GO in the dashboard container now reaches the
