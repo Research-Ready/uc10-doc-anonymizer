@@ -142,15 +142,18 @@ jobs:
           printf '#!/bin/bash\nexit 0\n' > ~/stub/docker; chmod +x ~/stub/docker
           echo ok > ~/web/health
           python3 -m http.server 5010 --directory ~/web >/dev/null 2>&1 &
-          cat > ~/run.sh <<'EOS'
+          open -a Terminal; shot 08-terminal-empty 8; closeall
+          cat > ~/run.command <<'EOS'
+          #!/bin/bash
           clear
           cd ~/uc10-doc-anonymizer-main
           export PATH=~/stub:$PATH
           bash install.sh
           EOS
-          open -a Terminal; shot 08-terminal-empty 8
-          osascript -e 'tell application "Terminal" to do script "bash ~/run.sh" in front window' || echo "osascript refused"
-          shot 09-terminal-installed 12
+          sed -i '' 's/^          //' ~/run.command
+          chmod +x ~/run.command
+          open ~/run.command
+          shot 09-terminal-installed 25
           closeall
           ls -la "$SHOTS"
 
