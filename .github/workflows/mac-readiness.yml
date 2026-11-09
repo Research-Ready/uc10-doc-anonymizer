@@ -119,17 +119,40 @@ jobs:
         run: |
           mkdir -p shots
           shot() { sleep "$2"; screencapture -x "shots/$1.png" || echo "screencapture failed for $1"; }
-          shot 01-desktop 1
-          open -a Safari https://github.com/Research-Ready/uc10-doc-anonymizer; shot 02-github-safari 20
-          osascript -e 'tell application "Safari" to quit' || true
+          closeall() { killall Safari Terminal "About This Mac" 2>/dev/null || true; osascript -e 'tell application "Finder" to close every window' || true; }
+          SHOTS="$PWD/shots"
+
+          open "/System/Library/CoreServices/Applications/About This Mac.app" || true; shot 01-about-this-mac 8; closeall
+
+          open -a Safari https://github.com/Research-Ready/uc10-doc-anonymizer; shot 02-github-safari 60; closeall
+
           curl -fsSL -o ~/Downloads/Docker.dmg https://desktop.docker.com/mac/main/arm64/Docker.dmg
-          open ~/Downloads/Docker.dmg; shot 03-docker-dmg 45
-          cp -R /Volumes/Docker/Docker.app /Applications/ && xattr -dr com.apple.quarantine /Applications/Docker.app || true
-          hdiutil detach /Volumes/Docker || true
-          open -a Docker; shot 04-docker-first-start 60; shot 05-docker-later 90
-          open -a Terminal; shot 06-terminal 10
-          open ~; shot 07-finder-home 10
-          ls -la shots
+          open ~/Downloads/Docker.dmg; shot 03-docker-dmg 45; closeall; hdiutil detach /Volumes/Docker || true
+
+          curl -fsSL -o ~/Downloads/uc10-doc-anonymizer-main.zip https://github.com/Research-Ready/uc10-doc-anonymizer/archive/refs/heads/main.zip
+          open ~/Downloads; shot 04-downloads-zip 10; closeall
+          (cd ~/Downloads && unzip -q uc10-doc-anonymizer-main.zip)
+          open ~/Downloads; shot 05-downloads-folder 10; closeall
+          mv ~/Downloads/uc10-doc-anonymizer-main ~/
+          open ~; shot 06-home-folder 10; closeall
+          open ~/uc10-doc-anonymizer-main; shot 07-project-folder 10; closeall
+
+          # The real install.sh in the real Terminal. Docker is a silent stand-in: these runners cannot run containers.
+          mkdir -p ~/stub ~/web
+          printf '#!/bin/bash\nexit 0\n' > ~/stub/docker; chmod +x ~/stub/docker
+          echo ok > ~/web/health
+          python3 -m http.server 5010 --directory ~/web >/dev/null 2>&1 &
+          cat > ~/run.sh <<'EOS'
+          clear
+          cd ~/uc10-doc-anonymizer-main
+          export PATH=~/stub:$PATH
+          bash install.sh
+          EOS
+          open -a Terminal; shot 08-terminal-empty 8
+          osascript -e 'tell application "Terminal" to do script "bash ~/run.sh" in front window' || echo "osascript refused"
+          shot 09-terminal-installed 12
+          closeall
+          ls -la "$SHOTS"
 
       - uses: actions/upload-artifact@v4
         with:
