@@ -38,6 +38,7 @@ jobs:
 
       - name: Dry-run
         run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils  # dry_run reads PDFs back with pdftotext
           python3 -m pip install --break-system-packages httpx
           python3 tests/dry_run.py
 
