@@ -1,0 +1,137 @@
+# Can a colleague with a Mac install this by following the handout?
+#  arm64-docker   the whole stack on real arm64 Linux with Docker: what Docker Desktop runs on Apple Silicon
+#  macos-install  install.sh on real macOS with the Mac's own /bin/bash 3.2 and BSD tools (Docker is stubbed:
+#                 GitHub's macOS runners cannot run containers)
+#  macos-screens  best effort: real macOS screenshots for the handout
+name: Mac readiness
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  arm64-docker:
+    name: Full stack on arm64 Docker
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install exactly as the handout says
+        run: bash install.sh
+
+      - name: Service is really healthy
+        # install.sh prints its success banner even when the health wait times out, so check for ourselves
+        run: |
+          for i in $(seq 1 60); do
+            curl -fsS --max-time 5 http://localhost:5010/health | tee /tmp/health.json && grep -q '"status":"ok"' /tmp/health.json && exit 0
+            sleep 5
+          done
+          echo "::error::service never reported status ok"; exit 1
+
+      - name: Dashboard answers
+        run: curl -fsS --max-time 20 http://localhost:5050/api/status | python3 -m json.tool
+
+      - name: Dry-run
+        run: |
+          python3 -m pip install --break-system-packages httpx
+          python3 tests/dry_run.py
+
+      - name: Eval of detection
+        run: python3 tests/eval_detection.py
+
+      - name: Follow the handout's test in the dashboard
+        run: |
+          curl -fsS -F "files=@tests/interview.docx" http://localhost:5050/api/upload
+          curl -fsS -F "targets=ValueChain Hackers BV" http://localhost:5050/api/targets
+          curl -fsSN --max-time 900 "http://localhost:5050/api/run-stream?force=true" | tee /tmp/run.txt
+          grep -q '"type": "finish"' /tmp/run.txt
+          grep -q '"success": true' /tmp/run.txt
+          out=$(find output -name '*_anon.docx' | head -1)
+          test -n "$out"
+          echo "output: $out"
+          if unzip -p "$out" | grep -aE 'Vries|Fatima|Janssen|Bakker|ValueChain'; then
+            echo "::error::personal data left in the output"; exit 1
+          fi
+
+      - name: Memory used by the stack (handout says give Docker 6 GB)
+        if: always()
+        run: docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}\t{{.CPUPerc}}'
+
+      - name: Container logs
+        if: failure()
+        run: docker compose logs --tail 200
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arm64-results
+          path: test-results/
+          if-no-files-found: ignore
+
+  macos-install:
+    name: Installer on real macOS
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: What machine is this
+        run: |
+          sw_vers
+          uname -m
+          /bin/bash --version | head -1
+
+      - name: Without Docker the message tells you what to do
+        run: |
+          if command -v docker >/dev/null; then echo "docker present on this runner, skipping"; exit 0; fi
+          if /bin/bash install.sh > /tmp/nodocker.txt 2>&1; then echo "::error::should have stopped"; exit 1; fi
+          cat /tmp/nodocker.txt
+          grep -q 'Docker is niet gevonden' /tmp/nodocker.txt
+
+      - name: With Docker, the Mac's own tools get through every step
+        run: |
+          mkdir -p "$RUNNER_TEMP/stub" "$RUNNER_TEMP/web"
+          printf '#!/bin/bash\necho "[stub docker] $*"\n' > "$RUNNER_TEMP/stub/docker"
+          chmod +x "$RUNNER_TEMP/stub/docker"
+          echo ok > "$RUNNER_TEMP/web/health"
+          python3 -m http.server 5010 --directory "$RUNNER_TEMP/web" >/dev/null 2>&1 &
+          sleep 2
+          PATH="$RUNNER_TEMP/stub:$PATH" /bin/bash install.sh | tee /tmp/install.txt
+          grep -q 'INSTALLATIE SUCCESVOL' /tmp/install.txt
+          grep -q 'service is gezond' /tmp/install.txt
+          grep -Eq '^NEO4J_PASSWORD=[0-9a-f]{32}$' .env
+          test -d input && test -d output && test -d keys
+
+  macos-screens:
+    name: Screenshots for the handout (best effort)
+    runs-on: macos-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    steps:
+      - name: Take the screenshots
+        continue-on-error: true
+        run: |
+          mkdir -p shots
+          shot() { sleep "$2"; screencapture -x "shots/$1.png" || echo "screencapture failed for $1"; }
+          shot 01-desktop 1
+          open -a Safari https://github.com/Research-Ready/uc10-doc-anonymizer; shot 02-github-safari 20
+          osascript -e 'tell application "Safari" to quit' || true
+          curl -fsSL -o ~/Downloads/Docker.dmg https://desktop.docker.com/mac/main/arm64/Docker.dmg
+          open ~/Downloads/Docker.dmg; shot 03-docker-dmg 45
+          cp -R /Volumes/Docker/Docker.app /Applications/ && xattr -dr com.apple.quarantine /Applications/Docker.app || true
+          hdiutil detach /Volumes/Docker || true
+          open -a Docker; shot 04-docker-first-start 60; shot 05-docker-later 90
+          open -a Terminal; shot 06-terminal 10
+          open ~; shot 07-finder-home 10
+          ls -la shots
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-screenshots
+          path: shots/
+          if-no-files-found: ignore
